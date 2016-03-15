@@ -1,0 +1,229 @@
+DRAFT - 2016-03-14
+
+*Currently running at:  http://217.150.246.7:6080/hdfs/*
+
+# MAMI HDFS REST WebService
+
+## Configuration
+
+### Settings
+
+#### AUTH_DB_NAME
+
+Name of the database used to store authentication information. 
+
+#### UPLOAD_DB_NAME
+
+Name of the database used to store upload information.
+
+### LOG_DB_NAME
+
+Name of the database used to store the access log.
+
+## AuthDB
+
+The AuthDB (auth database) contains the API-keys and their associated access level.
+The schema is:
+
+```q
+{"_id":<id>,
+ "api_key":<api_key>,
+ "access_level":<access_level>}
+```
+
+Uses the collection ```api_keys``` in the *AUTH_DB_NAME* database.
+
+## UploadDB
+
+The UploadDB (upload database) contains an entry for every uploaded file (or partially upoladed file). 
+The schema is:
+
+```q
+{"_id":<id>,
+ "path":<path of the file>, 
+ "complete":<boolean>,
+ "sha1":<sha1 hash of file contents>,
+ "meta":<metadata>,
+ "uploader":<name of the uploader}
+```
+
+*metadata* refers to the metadata specified by the uploader of the file when calling the *Upload Raw Data* REST-method. It may be an arbitrary JSON document but it includes at least ```msmntCampaign``` and ```format``` (see *Upload Raw Data* REST-method).
+An API-Key has a name associated which is stored as *uploader* in each entry in the collection. 
+
+Uses the collection ```uploads``` in the *UPLOAD_DB_NAME* database.
+
+## LogDB
+
+The access log database (LogDB) stores the access log. The access log records all uploads and file system accesses. The schema is:
+
+```q
+{"path":<path>,
+ "action":<action>,
+ "name",
+ "timestamp":<timestamp>}
+```
+
+*action* refers to what has been done (i.e. "rm" for removing a file).
+
+## Access levels
+
+Several different access levels exist. These are:
+
+* none: Dummy access level. No special permissions.
+* read: Permission to read files and list directory contents.
+* write: Permission to upload new raw data.
+* admin: Permission to delete, rename and create files.
+
+## API-Keys
+
+Much of the functionality requires an API-Key that has to be sent within the request in the
+```X-API-KEY``` header. An API-Key has an associated access level. API-Keys
+are to be kept private, must not be shared. If you think that your API-Key is not secret anymore please revoke the key by calling the *Revoke API-Key* REST-method. An API-Key
+has a name associated. This name refers to the person responsible for the API-Key. 
+The name is mainly used for logging purposes as due to security reasons the API-Key
+should not be logged. 
+
+## API
+
+## Error Codes
+
+401 is used when the API-Key is invalid or the associated access level is not enough
+to use a REST-method. 500 is used when an internal error has occured. If you see
+a 500 error please notify the hoster of the REST-service.
+
+### Filesystem Operations
+
+### Create File
+
+**Note**: Do not use this method for regular uploads of regular raw data. This method
+is mainly for debugging purposes. See *Upload Raw Data* REST-method instead!
+
+```POST /fs/touch/{path}```
+```q
+Path Parameters:
+  - path: File path
+```
+
+Creates an empty file on the file system. Requires *admin* permissions. 
+
+### Delete File
+
+*Note*: This does not update the upload database. Use with caution.
+
+```DELETE /fs/rm/{path}```
+```q
+Path Parameters:
+  - path: File path
+```
+
+Deletes a file. Requires *admin* permissions.
+
+### Delete  Recursive
+
+*Note*: This does not update the upload database. Use with caution.
+
+```DELETE /fs/rmR/{path}```
+```q
+Path Parameters:
+  - path: File path
+```
+
+Deletes a directory recursively. Requires *admin* permissions.
+
+### Download Binary File
+
+```GET /fs/bin/{path}```
+```q
+Path Parameters:
+ - path: Path of the file.
+Returns: application/octet-stream
+```
+
+Download a binary file. Requires *read* permissions.
+
+### Download Text File
+
+```GET /fs/raw/{path}```
+```q
+Path Parameters:
+ - path: Path of the file.
+Returns: text/plain
+```
+
+Download a text file. Requires *read* permissions.
+
+### List Files
+
+```GET /fs/ls/{path}```
+```q
+Path Parameters:
+ - path: Path of the directory.
+Returns: application/json
+```
+
+Lists all files in a directory and returns an array of the file names.
+Requires *read* permissions.
+
+### List Files Recursive
+
+```GET /fs/lsR/{path}```
+```q
+Path Parameters:
+  - path: Path of the directory.
+Returns: application/json
+```
+
+Lists all files in a directory recursively and returns an array of paths (**not** file names). Requires *read* permissions.
+
+### Status
+
+```GET /status```
+
+If this does not respond with a status code of ```200 OK``` then the service is not running. 
+
+### Upload File
+
+**Note**: Do not use this method for regular uploads of regular raw data. If you
+want to upload raw data use the *Upload Raw Data* REST-method. This method is for aribtrary file uploads and should be used with extreme caution. This method does not create an entry in the upload database.
+
+```POST /fs/put/{path}```
+```q
+Path Parameters:
+  - path: File path
+Accepts: application/octet-stream
+```
+
+Uploads a file to the file system. Requires *admin* permissions. 
+
+### Upload Raw Data
+
+```POST /up/{fileName}```
+```q
+Path Parameters:
+  - fileName: Name of the file (including extension)
+Accepts: multipart/form-data
+Form Data Parameters:
+  - meta: Metadata associated with the file. 
+  - data: raw data.
+```
+*meta* must be valid JSON and must contain ```msmntCampaign (String)``` and
+```format (String)``` as for example ```{"msmntCampaign" : "cmp000", "format" : "csv-foo"}```.
+
+Upon initiating an upload an entry in the *upload* database will be created with the flag
+```complete``` set to ```false```. After completing the upload the database entry will be updated and ```complete``` will be set to ```true```. A SHA1 hash of the uploaded data will be stored in the *upload* database as well.
+
+The file will be stored under ```WHDFS_PATH + '/' + msmntCampaign + '/' + format + '/' fileName```. 
+
+Requires *write* permissions.
+
+### Management
+
+#### Revoke API-Key
+
+```POST /mgmt/revoke```
+
+Revokes the API-Key that was sent within the request. Use this if you think that somebody knows your API-Key who shouldn't know it. 
+
+```GET /mgmt/accessLevel```
+
+Returns the access level the API-Key sent within the request grants. 
