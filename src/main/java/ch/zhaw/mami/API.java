@@ -79,8 +79,7 @@ public class API {
 	}
 
 	public ResponseBuilder allowCORS(final ResponseBuilder rb) {
-		return API.logger.exit(rb.header("Access-Control-Allow-Origin",
-				"*"));
+		return API.logger.exit(rb.header("Access-Control-Allow-Origin", "*"));
 	}
 
 	@Path("fs/bin/{path:.+}")
@@ -89,19 +88,17 @@ public class API {
 			@PathParam("path") final String path) {
 		API.logger.entry(apiKey, path);
 
-		if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_READ)) {
-			return API.logger
-					.exit(API.logger.exit(accessError()));
-		}
-
-		logDB.insertLogEntry(path, "bin", authDB.getName(apiKey));
-
-		if (!Util.validatePath(path)) {
-			return API.logger
-					.exit(clientError("Invalid path (contains illegal characters or too long)"));
-		}
-
 		try {
+			if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_READ)) {
+				return API.logger.exit(API.logger.exit(accessError()));
+			}
+
+			logDB.insertLogEntry(path, "bin", authDB.getName(apiKey));
+
+			if (!Util.validatePath(path)) {
+				return API.logger
+						.exit(clientError("Invalid path (contains illegal characters or too long)"));
+			}
 
 			org.apache.hadoop.fs.Path pt = new org.apache.hadoop.fs.Path(
 					runtimeConfiguration.getPathPrefix() + path);
@@ -111,8 +108,8 @@ public class API {
 			}
 
 			if (!runtimeConfiguration.getFileSystem().isFile(pt)) {
-				return API.logger.exit(generic404("Not a file: "
-						+ pt.getName()));
+				return API.logger
+						.exit(generic404("Not a file: " + pt.getName()));
 			}
 
 			final BufferedReader br = new BufferedReader(new InputStreamReader(
@@ -198,26 +195,26 @@ public class API {
 
 		API.logger.entry(apiKey, path);
 
-		if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_READ)) {
-			return API.logger.exit(accessError());
-		}
-
-		logDB.insertLogEntry(path, "ls", authDB.getName(apiKey));
-
-		if (!Util.validatePath(path)) {
-			return API.logger
-					.exit(clientError("Invalid path (contains illegal characters or too long)"));
-		}
-
 		try {
+			if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_READ)) {
+				return API.logger.exit(accessError());
+			}
+
+			logDB.insertLogEntry(path, "ls", authDB.getName(apiKey));
+
+			if (!Util.validatePath(path)) {
+				return API.logger
+						.exit(clientError("Invalid path (contains illegal characters or too long)"));
+			}
+
 			org.apache.hadoop.fs.Path pt = new org.apache.hadoop.fs.Path(
 					runtimeConfiguration.getPathPrefix() + path);
 
 			FileSystem fs = runtimeConfiguration.getFileSystem();
 
 			if (!fs.exists(pt)) {
-				return API.logger
-						.exit(generic404("Directory not found: " + pt.getName()));
+				return API.logger.exit(generic404("Directory not found: "
+						+ pt.getName()));
 			}
 
 			if (!fs.isDirectory(pt)) {
@@ -247,26 +244,26 @@ public class API {
 
 		API.logger.entry(apiKey, path);
 
-		if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_READ)) {
-			return API.logger.exit(accessError());
-		}
-
-		logDB.insertLogEntry(path, "lsR", authDB.getName(apiKey));
-
-		if (!Util.validatePath(path)) {
-			return API.logger
-					.exit(clientError("Invalid path (contains illegal characters or too long)"));
-		}
-
 		try {
+			if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_READ)) {
+				return API.logger.exit(accessError());
+			}
+
+			logDB.insertLogEntry(path, "lsR", authDB.getName(apiKey));
+
+			if (!Util.validatePath(path)) {
+				return API.logger
+						.exit(clientError("Invalid path (contains illegal characters or too long)"));
+			}
+
 			org.apache.hadoop.fs.Path pt = new org.apache.hadoop.fs.Path(
 					runtimeConfiguration.getPathPrefix() + path);
 
 			FileSystem fs = runtimeConfiguration.getFileSystem();
 
 			if (!fs.exists(pt)) {
-				return API.logger
-						.exit(generic404("Directory not found: " + pt.getName()));
+				return API.logger.exit(generic404("Directory not found: "
+						+ pt.getName()));
 			}
 
 			if (!fs.isDirectory(pt)) {
@@ -296,18 +293,18 @@ public class API {
 
 		API.logger.entry(apiKey, path, data);
 
-		if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_ADMIN)) {
-			return API.logger.exit(accessError());
-		}
-
-		logDB.insertLogEntry(path, "put", authDB.getName(apiKey));
-
-		if (!Util.validatePath(path)) {
-			return API.logger
-					.exit(clientError("Invalid path (contains illegal characters or too long)"));
-		}
-
 		try {
+			if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_ADMIN)) {
+				return API.logger.exit(accessError());
+			}
+
+			logDB.insertLogEntry(path, "put", authDB.getName(apiKey));
+
+			if (!Util.validatePath(path)) {
+				return API.logger
+						.exit(clientError("Invalid path (contains illegal characters or too long)"));
+			}
+
 			org.apache.hadoop.fs.Path pt = new org.apache.hadoop.fs.Path(
 					runtimeConfiguration.getPathPrefix() + path);
 
@@ -338,21 +335,20 @@ public class API {
 
 		API.logger.entry(apiKey, path);
 
-		if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_READ)) {
-			return API.logger.exit(accessError());
-		}
-
-		logDB.insertLogEntry(path, "raw", authDB.getName(apiKey));
-
-		if (!Util.validatePath(path)) {
-			return API.logger
-					.exit(clientError("Invalid path (contains illegal characters or too long)"));
-		}
-
-		org.apache.hadoop.fs.Path pt = new org.apache.hadoop.fs.Path(
-				runtimeConfiguration.getPathPrefix() + path);
-
 		try {
+			if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_READ)) {
+				return API.logger.exit(accessError());
+			}
+
+			logDB.insertLogEntry(path, "raw", authDB.getName(apiKey));
+
+			if (!Util.validatePath(path)) {
+				return API.logger
+						.exit(clientError("Invalid path (contains illegal characters or too long)"));
+			}
+
+			org.apache.hadoop.fs.Path pt = new org.apache.hadoop.fs.Path(
+					runtimeConfiguration.getPathPrefix() + path);
 
 			if (!runtimeConfiguration.getFileSystem().exists(pt)) {
 				return API.logger.exit(generic404("File not found: "
@@ -360,8 +356,8 @@ public class API {
 			}
 
 			if (!runtimeConfiguration.getFileSystem().isFile(pt)) {
-				return API.logger.exit(generic404("Not a file: "
-						+ pt.getName()));
+				return API.logger
+						.exit(generic404("Not a file: " + pt.getName()));
 			}
 
 			BufferedReader br = new BufferedReader(new InputStreamReader(
@@ -388,8 +384,7 @@ public class API {
 	public Response revoke(@HeaderParam("X-API-KEY") final String apiKey) {
 		API.logger.entry(apiKey);
 		authDB.revoke(apiKey);
-		return API.logger.exit(Response.ok("OK", MediaType.TEXT_PLAIN)
-				.build());
+		return API.logger.exit(Response.ok("OK", MediaType.TEXT_PLAIN).build());
 	}
 
 	@Path("fs/rm/{path:.+}")
@@ -398,18 +393,18 @@ public class API {
 			@PathParam("path") final String path) {
 		API.logger.entry(apiKey, path);
 
-		if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_ADMIN)) {
-			return API.logger.exit(accessError());
-		}
-
-		logDB.insertLogEntry(path, "rm", authDB.getName(apiKey));
-
-		if (!Util.validatePath(path)) {
-			return API.logger
-					.exit(clientError("Invalid path (contains illegal characters or too long)"));
-		}
-
 		try {
+			if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_ADMIN)) {
+				return API.logger.exit(accessError());
+			}
+
+			logDB.insertLogEntry(path, "rm", authDB.getName(apiKey));
+
+			if (!Util.validatePath(path)) {
+				return API.logger
+						.exit(clientError("Invalid path (contains illegal characters or too long)"));
+			}
+
 			org.apache.hadoop.fs.Path pt = new org.apache.hadoop.fs.Path(
 					runtimeConfiguration.getPathPrefix() + path);
 
@@ -421,16 +416,16 @@ public class API {
 			}
 
 			if (!fs.isFile(pt)) {
-				return API.logger.exit(generic404("Not a file: "
-						+ pt.getName()));
+				return API.logger
+						.exit(generic404("Not a file: " + pt.getName()));
 			}
 
 			if (!fs.delete(pt, false)) {
 				return API.logger.exit(clientError("Delete failed!"));
 			}
 
-			return API.logger.exit(Response.ok("OK",
-					MediaType.TEXT_PLAIN).build());
+			return API.logger.exit(Response.ok("OK", MediaType.TEXT_PLAIN)
+					.build());
 
 		} catch (Exception ex) {
 			API.logger.catching(ex);
@@ -444,18 +439,18 @@ public class API {
 			@PathParam("path") final String path) {
 		API.logger.entry(apiKey, path);
 
-		if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_ADMIN)) {
-			return API.logger.exit(accessError());
-		}
-
-		logDB.insertLogEntry(path, "rmR", authDB.getName(apiKey));
-
-		if (!Util.validatePath(path)) {
-			return API.logger
-					.exit(clientError("Invalid path (contains illegal characters or too long)"));
-		}
-
 		try {
+			if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_ADMIN)) {
+				return API.logger.exit(accessError());
+			}
+
+			logDB.insertLogEntry(path, "rmR", authDB.getName(apiKey));
+
+			if (!Util.validatePath(path)) {
+				return API.logger
+						.exit(clientError("Invalid path (contains illegal characters or too long)"));
+			}
+
 			org.apache.hadoop.fs.Path pt = new org.apache.hadoop.fs.Path(
 					runtimeConfiguration.getPathPrefix() + path);
 
@@ -467,16 +462,16 @@ public class API {
 			}
 
 			if (!fs.isFile(pt)) {
-				return API.logger.exit(generic404("Not a file: "
-						+ pt.getName()));
+				return API.logger
+						.exit(generic404("Not a file: " + pt.getName()));
 			}
 
 			if (!fs.delete(pt, true)) {
 				return API.logger.exit(clientError("Delete failed!"));
 			}
 
-			return API.logger.exit(Response.ok("OK",
-					MediaType.TEXT_PLAIN).build());
+			return API.logger.exit(Response.ok("OK", MediaType.TEXT_PLAIN)
+					.build());
 
 		} catch (Exception ex) {
 			API.logger.catching(ex);
@@ -488,8 +483,8 @@ public class API {
 	@GET
 	public Response status() {
 		API.logger.entry();
-		return API.logger.exit(Response.ok("RUNNING",
-				MediaType.TEXT_PLAIN).build());
+		return API.logger.exit(Response.ok("RUNNING", MediaType.TEXT_PLAIN)
+				.build());
 	}
 
 	@Path("fs/touch/{path:.+}")
@@ -499,26 +494,25 @@ public class API {
 
 		API.logger.entry(apiKey, path);
 
-		if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_ADMIN)) {
-			return API.logger.exit(accessError());
-		}
-
-		logDB.insertLogEntry(path, "touch", authDB.getName(apiKey));
-
-		if (!Util.validatePath(path)) {
-			return API.logger
-					.exit(clientError("Invalid path (contains illegal characters or too long)"));
-		}
-
-		org.apache.hadoop.fs.Path pt = new org.apache.hadoop.fs.Path(
-				runtimeConfiguration.getPathPrefix() + path);
-
 		try {
+			if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_ADMIN)) {
+				return API.logger.exit(accessError());
+			}
+
+			logDB.insertLogEntry(path, "touch", authDB.getName(apiKey));
+
+			if (!Util.validatePath(path)) {
+				return API.logger
+						.exit(clientError("Invalid path (contains illegal characters or too long)"));
+			}
+
+			org.apache.hadoop.fs.Path pt = new org.apache.hadoop.fs.Path(
+					runtimeConfiguration.getPathPrefix() + path);
+
 			FileSystem fs = runtimeConfiguration.getFileSystem();
 
 			if (fs.exists(pt)) {
-				return API.logger
-						.exit(clientError("Path already exists."));
+				return API.logger.exit(clientError("Path already exists."));
 			}
 
 			fs.create(pt);
@@ -539,15 +533,14 @@ public class API {
 			@HeaderParam("X-API-KEY") final String apiKey) {
 		API.logger.entry(meta, data);
 
-		if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_WRITE)) {
-			return API.logger.exit(accessError());
-		}
-
-		logDB.insertLogEntry(fileName, "up", authDB.getName(apiKey));
-
-		OutputStream os = null;
-
 		try {
+			if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_WRITE)) {
+				return API.logger.exit(accessError());
+			}
+
+			logDB.insertLogEntry(fileName, "up", authDB.getName(apiKey));
+
+			OutputStream os = null;
 
 			JSONObject obj = null;
 
@@ -582,8 +575,7 @@ public class API {
 			FileSystem fs = runtimeConfiguration.getFileSystem();
 
 			if (fs.exists(pt)) {
-				return API.logger
-						.exit(clientError("Path already exists."));
+				return API.logger.exit(clientError("Path already exists."));
 			}
 
 			MessageDigest md = MessageDigest.getInstance("SHA-1");
@@ -610,7 +602,7 @@ public class API {
 
 			uploadDB.completeUpload(pt.toString(), digest);
 
-			return API.logger.exit(Response.ok("OK").build());
+			return API.logger.exit(Response.ok(digest).build());
 
 		} catch (Exception ex) {
 			API.logger.catching(ex);
