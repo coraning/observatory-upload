@@ -4,6 +4,22 @@ Date: 2016-03-16
 
 # MAMI HDFS REST WebService
 
+## Examples
+
+### Upload File
+
+```
+curl -# -i -H "X-API-KEY: putyourkeyhere" -F meta=@sample.json -F data=@sample.txt https://217.150.246.7:6443/hdfs/up/sample.txt --insecure
+```
+
+*sample.json* contains the metadata and *sample.txt* the actual raw data.
+
+### List Files
+
+```
+curl -i -H "X-API-KEY: putyourkeyhere" https://217.150.246.7:6443/hdfs/fs/lsR/. --insecure
+```
+
 ## Configuration
 
 ### Settings
