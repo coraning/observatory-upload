@@ -213,6 +213,8 @@ Uploads a file to the file system. Requires *admin* permissions.
 
 ### Upload Raw Data
 
+**Note**: If you want to just test uploading use *testing* for *msmntCampaign* (```{"msmntCampaign":"testing"}```). 
+
 ```POST /up/{fileName}```
 ```q
 Path Parameters:
