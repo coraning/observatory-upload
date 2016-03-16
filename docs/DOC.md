@@ -1,6 +1,6 @@
-DRAFT - 2016-03-14
+Date: 2016-03-16
 
-*Currently running at:  http://217.150.246.7:6080/hdfs/*
+*Currently running at:  https://217.150.246.7:6443/hdfs/*
 
 # MAMI HDFS REST WebService
 

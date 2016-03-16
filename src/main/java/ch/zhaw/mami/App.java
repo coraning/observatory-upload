@@ -18,9 +18,6 @@ public class App {
 		final String baseUri = RuntimeConfiguration.getInstance().getURL();
 		final Map<String, String> initParams = new HashMap<String, String>();
 
-		System.out.println("abcd0".matches("[a-z]*"));
-		System.exit(0);
-
 		if (System.getProperty("log4j.configurationFile") == null) {
 			System.out.println("Using default /etc/hdfs-mami/logger.xml!");
 			System.setProperty("log4j.configurationFile",
