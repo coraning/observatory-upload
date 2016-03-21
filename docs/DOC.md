@@ -264,6 +264,9 @@ Uploads a file to the file system. Requires *admin* permissions.
 
 ### Upload Raw Data
 
+**Note:** As of now uploading huge files using this method will not work as
+they will be loaded into memory first. We're hoping to fix this. 
+
 ```POST /fs/seq/up/{fileName}```
 ```q
 Path Parameters:
