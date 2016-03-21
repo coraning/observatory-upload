@@ -4,6 +4,29 @@ Date: 2016-03-16
 
 # MAMI HDFS REST WebService
 
+## Examples
+
+```
+$ cat small2.txt
+this is two
+
+$ cat small.meta
+{"msmntCampaign":"testing","format":"txt","seq":"0003"}
+
+$ curl -v -i -H "X-API-KEY: key" -F meta=@small.meta -F data=@small1.txt https://217.150.246.7:6443/hdfs/seq/up/small1.txt --insecure
+ee4f42fa585d9bb88f25e83f6f8cea6563749585
+
+$ curl -v -i -H "X-API-KEY: key" -F meta=@small.meta -F data=@small2.txt https://217.150.246.7:6443/hdfs/seq/up/small2.txt --insecure
+baa29d3adbe3e71d99cb00473c75f5c0f14818d7
+
+$ curl -v -i -H "X-API-KEY: key" https://217.150.246.7:6443/hdfs/fs/seq/ls/testing/txt/0003.seq --insecure
+["small1.txt","small2.txt"]
+
+$ curl -v -i -H "X-API-KEY: bcbc-0101-bcbc-bcbc0101" https://217.150.246.7:6443/hdfs/fs/seq/raw/testing/txt/0003.seq?fileName=small2.txt --insecure
+this is two
+```
+
+
 ## Configuration
 
 ### Settings
