@@ -22,7 +22,7 @@ baa29d3adbe3e71d99cb00473c75f5c0f14818d7
 $ curl -v -i -H "X-API-KEY: key" https://217.150.246.7:6443/hdfs/fs/seq/ls/testing/txt/0003.seq --insecure
 ["small1.txt","small2.txt"]
 
-$ curl -v -i -H "X-API-KEY: bcbc-0101-bcbc-bcbc0101" https://217.150.246.7:6443/hdfs/fs/seq/raw/testing/txt/0003.seq?fileName=small2.txt --insecure
+$ curl -v -i -H "X-API-KEY: key" https://217.150.246.7:6443/hdfs/fs/seq/raw/testing/txt/0003.seq?fileName=small2.txt --insecure
 this is two
 ```
 
@@ -282,7 +282,7 @@ Form Data Parameters:
 the SequenceFile to put the new data into. 
 
 The SequenceFile used will be ```WHDFS_PATH + '/' + msmntCampaign + '/' + format + '/' + seq + '.seq'``` and
-it will be create if neccessary. 
+it will be created if neccessary. 
 
 Upon initiating an upload an entry in the *upload* database will be created with the flag
 ```complete``` set to ```false```. After completing the upload the database entry will be updated and ```complete``` will be set to ```true```. A SHA1 hash of the uploaded data will be stored in the *upload* database as well.
