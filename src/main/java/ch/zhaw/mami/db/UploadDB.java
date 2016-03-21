@@ -4,6 +4,7 @@ import org.bson.Document;
 
 import ch.zhaw.mami.RuntimeConfiguration;
 
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 
 public class UploadDB {
@@ -19,31 +20,114 @@ public class UploadDB {
 
 	}
 
-	public void completeUpload(final String path, final String sha1) {
-		Document queryDoc = new Document();
-		Document updateDoc = new Document();
-		Document modDoc = new Document();
+	public void completeSeqUpload(final String path, final String seqKey,
+			final String sha1) {
+		synchronized (UploadDB.mutex) {
+			Document queryDoc = new Document();
+			Document updateDoc = new Document();
+			Document modDoc = new Document();
 
-		queryDoc.append("path", path);
+			queryDoc.append("path", path);
+			queryDoc.append("seqKey", seqKey);
 
-		modDoc.append("complete", true);
-		modDoc.append("sha1", sha1);
+			modDoc.append("complete", true);
+			modDoc.append("sha1", sha1);
 
-		updateDoc.append("$set", modDoc);
+			updateDoc.append("$set", modDoc);
 
-		collection.updateOne(queryDoc, updateDoc);
+			collection.updateOne(queryDoc, updateDoc);
+		}
 	}
 
-	public void insertUpload(final String path, final String jsonData,
-			final String name) {
-		Document metaDoc = Document.parse(jsonData);
-		Document doc = new Document();
-		doc.append("path", path);
-		doc.append("meta", metaDoc);
-		doc.append("sha1", "");
-		doc.append("complete", false);
-		doc.append("uploader", name);
+	public void completeUpload(final String path, final String sha1) {
+		synchronized (UploadDB.mutex) {
+			Document queryDoc = new Document();
+			Document updateDoc = new Document();
+			Document modDoc = new Document();
 
-		collection.insertOne(doc);
+			queryDoc.append("path", path);
+
+			modDoc.append("complete", true);
+			modDoc.append("sha1", sha1);
+
+			updateDoc.append("$set", modDoc);
+
+			collection.updateOne(queryDoc, updateDoc);
+		}
+	}
+
+	public boolean insertSeqUpload(final String path, final String jsonData,
+			final String seqKey, final String name) {
+		synchronized (UploadDB.mutex) {
+
+			if (seqUploadExists(path, seqKey)) {
+				return false;
+			}
+
+			Document metaDoc = Document.parse(jsonData);
+			Document doc = new Document();
+			doc.append("path", path);
+			doc.append("meta", metaDoc);
+			doc.append("sha1", "");
+			doc.append("complete", false);
+			doc.append("seqKey", seqKey);
+			doc.append("uploader", name);
+
+			collection.insertOne(doc);
+
+			return true;
+		}
+	}
+
+	public boolean insertUpload(final String path, final String jsonData,
+			final String name) {
+		synchronized (UploadDB.mutex) {
+			if (uploadExists(path)) {
+				return false;
+			}
+
+			Document metaDoc = Document.parse(jsonData);
+			Document doc = new Document();
+			doc.append("path", path);
+			doc.append("meta", metaDoc);
+			doc.append("sha1", "");
+			doc.append("complete", false);
+			doc.append("uploader", name);
+
+			collection.insertOne(doc);
+
+			return true;
+		}
+	}
+
+	public boolean seqUploadExists(final String path, final String seqKey) {
+		synchronized (UploadDB.mutex) {
+			Document queryDoc = new Document();
+
+			queryDoc.append("path", path);
+			queryDoc.append("seqKey", seqKey);
+
+			FindIterable<Document> results = collection.find(queryDoc);
+			for (Document doc : results) {
+				return true;
+			}
+
+			return false;
+		}
+	}
+
+	public boolean uploadExists(final String path) {
+		synchronized (UploadDB.mutex) {
+			Document queryDoc = new Document();
+
+			queryDoc.append("path", path);
+
+			FindIterable<Document> results = collection.find(queryDoc);
+			for (Document doc : results) {
+				return true;
+			}
+
+			return false;
+		}
 	}
 }

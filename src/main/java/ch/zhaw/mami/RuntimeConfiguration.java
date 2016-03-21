@@ -117,11 +117,16 @@ public class RuntimeConfiguration {
 
 	public FileSystem getFileSystem() throws IOException {
 		if (fileSystem == null) {
-			Configuration conf = new Configuration();
-			conf.set("fs.default.name", RuntimeConfiguration.path);
-			fileSystem = FileSystem.get(conf);
+			fileSystem = FileSystem.get(getFSConfiguration());
 		}
 		return fileSystem;
+	}
+
+	public Configuration getFSConfiguration() {
+		Configuration conf = new Configuration();
+		conf.set("fs.default.name", RuntimeConfiguration.path);
+		conf.set("dfs.replication", "1");
+		return conf;
 	}
 
 	public LogDB getLogDB() {

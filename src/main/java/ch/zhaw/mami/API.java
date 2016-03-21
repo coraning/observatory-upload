@@ -17,6 +17,8 @@ import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -26,6 +28,9 @@ import javax.ws.rs.core.StreamingOutput;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.RemoteIterator;
+import org.apache.hadoop.io.BytesWritable;
+import org.apache.hadoop.io.SequenceFile;
+import org.apache.hadoop.io.SequenceFile.CompressionType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONArray;
@@ -479,6 +484,289 @@ public class API {
 		}
 	}
 
+	@Path("fs/seq/bin/{path:.+}")
+	@GET
+	@Produces({ MediaType.APPLICATION_OCTET_STREAM })
+	public Response seqBin(@PathParam("path") final String path,
+			@QueryParam("fileName") final String fileName,
+			@HeaderParam("X-API-KEY") final String apiKey) {
+		API.logger.entry(path, fileName);
+
+		SequenceFile.Reader seqReader = null;
+
+		try {
+			if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_READ)) {
+				return API.logger.exit(accessError());
+			}
+
+			logDB.insertLogEntry(path, "seqbin", authDB.getName(apiKey));
+
+			if (!Util.validatePath(path)) {
+				return API.logger
+						.exit(clientError("Invalid path (contains illegal characters or too long)"));
+			}
+
+			org.apache.hadoop.fs.Path pt = new org.apache.hadoop.fs.Path(
+					runtimeConfiguration.getPathPrefix() + path);
+
+			seqReader = new SequenceFile.Reader(
+					runtimeConfiguration.getFSConfiguration(),
+					SequenceFile.Reader.file(pt));
+
+			BytesWritable key = new BytesWritable();
+
+			while (seqReader.next(key)) {
+				String keyAsStr = new String(key.getBytes(), 0, key.getLength());
+				if (keyAsStr.equals(fileName)) {
+					BytesWritable value = new BytesWritable();
+					seqReader.getCurrentValue(value);
+					seqReader.close();
+					return API.logger.exit(Response.ok(value.copyBytes(),
+							MediaType.APPLICATION_OCTET_STREAM).build());
+				}
+			}
+
+			seqReader.close();
+
+			return API.logger
+					.exit(generic404("File not found in sequence file!"));
+		} catch (Exception ex) {
+			API.logger.catching(ex);
+			return API.logger.exit(internalError());
+		} finally {
+			if (seqReader != null) {
+				try {
+					seqReader.close();
+				} catch (Exception ex) {
+					API.logger.catching(ex);
+					return API.logger.exit(internalError());
+				}
+			}
+		}
+
+	}
+
+	@Path("fs/seq/ls/{path:.+}")
+	@GET
+	public Response seqLs(@PathParam("path") final String path,
+			@HeaderParam("X-API-KEY") final String apiKey) {
+		API.logger.entry(path);
+
+		SequenceFile.Reader seqReader = null;
+
+		try {
+			if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_WRITE)) {
+				return API.logger.exit(accessError());
+			}
+
+			logDB.insertLogEntry(path, "seqls", authDB.getName(apiKey));
+
+			if (!Util.validatePath(path)) {
+				return API.logger
+						.exit(clientError("Invalid path (contains illegal characters or too long)"));
+			}
+
+			JSONArray arr = new JSONArray();
+
+			org.apache.hadoop.fs.Path pt = new org.apache.hadoop.fs.Path(
+					runtimeConfiguration.getPathPrefix() + path);
+
+			seqReader = new SequenceFile.Reader(
+					runtimeConfiguration.getFSConfiguration(),
+					SequenceFile.Reader.file(pt));
+
+			BytesWritable key = new BytesWritable();
+
+			while (seqReader.next(key)) {
+				String keyAsStr = new String(key.getBytes(), 0, key.getLength());
+				arr.put(keyAsStr);
+			}
+
+			seqReader.close();
+
+			return API.logger.exit(Response.ok(arr.toString(),
+					MediaType.APPLICATION_JSON).build());
+
+		} catch (Exception ex) {
+			API.logger.catching(ex);
+			return API.logger.exit(internalError());
+		} finally {
+			if (seqReader != null) {
+				try {
+					seqReader.close();
+				} catch (Exception ex) {
+					API.logger.catching(ex);
+					return API.logger.exit(internalError());
+				}
+			}
+		}
+	}
+
+	@Path("fs/seq/raw/{path:.+}")
+	@GET
+	@Produces({ MediaType.TEXT_PLAIN })
+	public Response seqRaw(@PathParam("path") final String path,
+			@QueryParam("fileName") final String fileName,
+			@HeaderParam("X-API-KEY") final String apiKey) {
+		API.logger.entry(path, fileName);
+
+		SequenceFile.Reader seqReader = null;
+
+		try {
+			if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_READ)) {
+				return API.logger.exit(accessError());
+			}
+
+			logDB.insertLogEntry(path, "seqraw", authDB.getName(apiKey));
+
+			if (!Util.validatePath(path)) {
+				return API.logger
+						.exit(clientError("Invalid path (contains illegal characters or too long)"));
+			}
+
+			org.apache.hadoop.fs.Path pt = new org.apache.hadoop.fs.Path(
+					runtimeConfiguration.getPathPrefix() + path);
+
+			seqReader = new SequenceFile.Reader(
+					runtimeConfiguration.getFSConfiguration(),
+					SequenceFile.Reader.file(pt));
+
+			BytesWritable key = new BytesWritable();
+
+			while (seqReader.next(key)) {
+				String keyAsStr = new String(key.getBytes(), 0, key.getLength());
+				if (keyAsStr.equals(fileName)) {
+					BytesWritable value = new BytesWritable();
+					seqReader.getCurrentValue(value);
+					seqReader.close();
+					return API.logger.exit(Response.ok(
+							new String(value.getBytes(), 0, value.getLength()),
+							MediaType.TEXT_PLAIN).build());
+				}
+			}
+
+			seqReader.close();
+
+			return API.logger
+					.exit(generic404("File not found in sequence file!"));
+		} catch (Exception ex) {
+			API.logger.catching(ex);
+			return API.logger.exit(internalError());
+		} finally {
+			if (seqReader != null) {
+				try {
+					seqReader.close();
+				} catch (Exception ex) {
+					API.logger.catching(ex);
+					return API.logger.exit(internalError());
+				}
+			}
+		}
+
+	}
+
+	@Path("seq/up/{fileName}")
+	@POST
+	@Consumes(MediaType.MULTIPART_FORM_DATA)
+	public Response seqUpload(@FormDataParam("meta") final String meta,
+			@FormDataParam("data") final byte[] data,
+			@PathParam("fileName") final String fileName,
+			@HeaderParam("X-API-KEY") final String apiKey) {
+		API.logger.entry(meta, data, fileName);
+
+		SequenceFile.Writer seqWriter = null;
+
+		try {
+			if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_WRITE)) {
+				return API.logger.exit(accessError());
+			}
+
+			logDB.insertLogEntry(fileName, "sequp", authDB.getName(apiKey));
+
+			OutputStream os = null;
+
+			JSONObject obj = null;
+
+			try {
+				obj = new JSONObject(meta);
+			} catch (Exception ex) {
+				return API.logger.exit(clientError("Invalid JSON"));
+			}
+
+			if (obj.getString("msmntCampaign") == null
+					|| obj.getString("format") == null
+					|| obj.getString("seq") == null) {
+				return API.logger
+						.exit(clientError("Invalid JSON. Need `msmntCampaign` and `format`."));
+			}
+
+			if (!Util.validatePathPart(obj.getString("msmntCampaign"))
+					|| !Util.validatePathPart(obj.getString("format"))
+					|| !Util.validatePathPart(obj.getString("seq"))) {
+				return API.logger
+						.exit(clientError("Invalid `msmntCampaign`, `seq` or invalid `format` (contain illegal characters or too long)"));
+			}
+
+			if (!Util.validateFileName(fileName)) {
+				return API.logger
+						.exit(clientError("Invalid file name (contains illegal characters or too long)"));
+			}
+
+			String seq = obj.getString("seq");
+
+			org.apache.hadoop.fs.Path pt = new org.apache.hadoop.fs.Path(
+					runtimeConfiguration.getPathPrefix()
+							+ obj.getString("msmntCampaign") + "/"
+							+ obj.getString("format") + "/" + seq + ".seq");
+
+			FileSystem fs = runtimeConfiguration.getFileSystem();
+
+			MessageDigest md = MessageDigest.getInstance("SHA-1");
+
+			if (!uploadDB.insertSeqUpload(pt.toString(), meta, fileName,
+					authDB.getName(apiKey))) {
+				return API.logger
+						.exit(clientError("Upload entry already exists!"));
+			}
+
+			md.update(data);
+
+			String digest = Util.byteArr2HexStr(md.digest());
+
+			seqWriter = SequenceFile.createWriter(
+					runtimeConfiguration.getFSConfiguration(),
+					SequenceFile.Writer.compression(CompressionType.RECORD),
+					SequenceFile.Writer.keyClass(BytesWritable.class),
+					SequenceFile.Writer.valueClass(BytesWritable.class),
+					SequenceFile.Writer.appendIfExists(true),
+					SequenceFile.Writer.file(pt));
+
+			BytesWritable key = new BytesWritable(fileName.getBytes());
+			BytesWritable val = new BytesWritable(data);
+
+			seqWriter.append(key, val);
+			seqWriter.hflush();
+			seqWriter.hsync();
+			seqWriter.close();
+
+			uploadDB.completeSeqUpload(pt.toString(), fileName, digest);
+
+			return API.logger.exit(Response.ok(digest).build());
+		} catch (Exception ex) {
+			API.logger.catching(ex);
+			return API.logger.exit(internalError());
+		} finally {
+			if (seqWriter != null) {
+				try {
+					seqWriter.close();
+				} catch (Exception ex) {
+					API.logger.catching(ex);
+					return API.logger.exit(internalError());
+				}
+			}
+		}
+	}
+
 	@Path("status")
 	@GET
 	public Response status() {
@@ -580,7 +868,11 @@ public class API {
 
 			MessageDigest md = MessageDigest.getInstance("SHA-1");
 
-			uploadDB.insertUpload(pt.toString(), meta, authDB.getName(apiKey));
+			if (!uploadDB.insertUpload(pt.toString(), meta,
+					authDB.getName(apiKey))) {
+				return API.logger
+						.exit(clientError("Upload entry already exists!"));
+			}
 
 			os = fs.create(pt);
 

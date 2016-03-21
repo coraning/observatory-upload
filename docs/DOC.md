@@ -4,22 +4,6 @@ Date: 2016-03-16
 
 # MAMI HDFS REST WebService
 
-## Examples
-
-### Upload File
-
-```
-curl -# -i -H "X-API-KEY: putyourkeyhere" -F meta=@sample.json -F data=@sample.txt https://217.150.246.7:6443/hdfs/up/sample.txt --insecure
-```
-
-*sample.json* contains the metadata and *sample.txt* the actual raw data.
-
-### List Files
-
-```
-curl -i -H "X-API-KEY: putyourkeyhere" https://217.150.246.7:6443/hdfs/fs/lsR/. --insecure
-```
-
 ## Configuration
 
 ### Settings
@@ -67,6 +51,12 @@ The schema is:
 An API-Key has a name associated which is stored as *uploader* in each entry in the collection. 
 
 Uses the collection ```uploads``` in the *UPLOAD_DB_NAME* database.
+
+
+### SequenceFiles
+
+If the file was uploaded as part of a SequenceFile then the *path* will point to the sequence file and 
+*seqKey* will contain the key of the entry in the SequenceFile. 
 
 ## LogDB
 
@@ -146,7 +136,7 @@ Path Parameters:
 
 Deletes a directory recursively. Requires *admin* permissions.
 
-### Download Binary File
+### Download Binary File (Huge File)
 
 ```GET /fs/bin/{path}```
 ```q
@@ -157,12 +147,38 @@ Returns: application/octet-stream
 
 Download a binary file. Requires *read* permissions.
 
-### Download Text File
+### Download Text File (Huge File)
 
 ```GET /fs/raw/{path}```
 ```q
 Path Parameters:
  - path: Path of the file.
+Returns: text/plain
+```
+
+Download a text file. Requires *read* permissions.
+
+### Download Binary File (SequenceFile)
+
+```GET /fs/seq/bin/{path}?fileName={fileName}```
+```q
+Path Parameters:
+ - path: Path to the SequenceFile.
+Query Parameters:
+ - fileName: Name of the small file inside the SequenceFile.
+Returns: application/octet-stream
+```
+
+Download a binary file. Requires *read* permissions.
+
+### Download Text File (SequenceFile)
+
+```GET /fs/seq/raw/{path}?fileName={fileName}```
+```q
+Path Parameters:
+ - path: Path to the SequenceFile.
+Query Parameters:
+ - fileName: Name of the small file inside the SequenceFile.
 Returns: text/plain
 ```
 
@@ -178,6 +194,18 @@ Returns: application/json
 ```
 
 Lists all files in a directory and returns an array of the file names.
+Requires *read* permissions.
+
+### List Files (SequenceFile)
+
+```GET /fs/seq/ls/{path}```
+```q
+Path Parameters:
+ - path: Path of the SequenceFile.
+Returns: application/json
+```
+
+Lists all files in the SequenceFile and returns an array of the file names.
 Requires *read* permissions.
 
 ### List Files Recursive
@@ -212,6 +240,41 @@ Accepts: application/octet-stream
 Uploads a file to the file system. Requires *admin* permissions. 
 
 ### Upload Raw Data
+
+```POST /fs/seq/up/{fileName}```
+```q
+Path Parameters:
+  - fileName: Name of the file (including extension).
+              This will be used as the key for the entry in the
+              SequenceFile.
+Accepts: multipart/form-data
+Form Data Parameters:
+  - meta: Metadata associated with the file.
+  - data: raw data
+```
+
+*meta* must be valid JSON and must contain ```msmntCampaign (String)```,
+```format (String)``` and ```seq (String)```. 
+```seq``` is an identifier (such as for example ```0000```) which identifies
+the SequenceFile to put the new data into. 
+
+The SequenceFile used will be ```WHDFS_PATH + '/' + msmntCampaign + '/' + format + '/' + seq + '.seq'``` and
+it will be create if neccessary. 
+
+Upon initiating an upload an entry in the *upload* database will be created with the flag
+```complete``` set to ```false```. After completing the upload the database entry will be updated and ```complete``` will be set to ```true```. A SHA1 hash of the uploaded data will be stored in the *upload* database as well.
+
+Requires *write* permissions.
+
+#### About SequenceFiles
+
+A SequenceFile is an archive of small files. This is due to HDFS not liking too many small files.
+A SequenceFile is a Key-Value file format. 
+
+
+### Upload Raw Data (Huge Files)
+
+**Important:** Should be used for huge files (>=1GB) only and only after discussion. 
 
 **Note**: If you want to just test uploading use *testing* for *msmntCampaign* (```{"msmntCampaign":"testing"}```). 
 
