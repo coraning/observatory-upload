@@ -211,20 +211,6 @@ Lists all files in a directory recursively and returns an array of paths (**not*
 
 If this does not respond with a status code of ```200 OK``` then the service is not running. 
 
-### Upload File
-
-**Note**: Do not use this method for regular uploads of regular raw data. If you
-want to upload raw data use the *Upload Raw Data* REST-method. This method is for aribtrary file uploads and should be used with extreme caution. This method does not create an entry in the upload database.
-
-```POST /fs/put/{path}```
-```q
-Path Parameters:
-  - path: File path
-Accepts: application/octet-stream
-```
-
-Uploads a file to the file system. Requires *admin* permissions. 
-
 ### Upload Raw Data
 
 **Note:** As of now uploading huge files using this method will not work as

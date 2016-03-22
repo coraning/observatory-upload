@@ -338,6 +338,7 @@ public class API {
 					MediaType.TEXT_PLAIN).build());
 		} catch (Exception ex) {
 			API.logger.catching(ex);
+			uploadDB.insertError(pt.toString(), null, ex.getMessage());
 			return API.logger.exit(internalError());
 		} finally {
 
@@ -349,6 +350,7 @@ public class API {
 				}
 			} catch (Exception ex) {
 				API.logger.catching(ex);
+				uploadDB.insertError(pt.toString(), null, ex.getMessage());
 				error = true;
 			}
 
@@ -357,6 +359,7 @@ public class API {
 					os.close();
 				} catch (Exception ex) {
 					API.logger.catching(ex);
+					uploadDB.insertError(pt.toString(), null, ex.getMessage());
 					error = true;
 				}
 			}
@@ -364,6 +367,7 @@ public class API {
 				try {
 					data.close();
 				} catch (Exception ex) {
+					uploadDB.insertError(pt.toString(), null, ex.getMessage());
 					API.logger.catching(ex);
 					error = true;
 				}
@@ -634,6 +638,7 @@ public class API {
 
 		SequenceFile.Writer seqWriter = null;
 		org.apache.hadoop.fs.Path pt = null;
+		String seq = null;
 		boolean locked = false;
 
 		try {
@@ -670,7 +675,7 @@ public class API {
 						.exit(clientError("Invalid file name (contains illegal characters or too long)"));
 			}
 
-			String seq = obj.getString("seq");
+			seq = obj.getString("seq");
 
 			pt = new org.apache.hadoop.fs.Path(
 					runtimeConfiguration.getPathPrefix()
@@ -717,6 +722,7 @@ public class API {
 			return API.logger.exit(clientError("Invalid JSON!"));
 		} catch (Exception ex) {
 			API.logger.catching(ex);
+			uploadDB.insertError(pt.toString(), seq, ex.getMessage());
 			return API.logger.exit(internalError());
 		} finally {
 			boolean error = false;
@@ -726,6 +732,7 @@ public class API {
 					uploadDB.releaseLock(pt.toString());
 				} catch (Exception ex) {
 					API.logger.catching(ex);
+					uploadDB.insertError(pt.toString(), seq, ex.getMessage());
 					error = true;
 				}
 			}
@@ -734,6 +741,7 @@ public class API {
 					seqWriter.close();
 				} catch (Exception ex) {
 					API.logger.catching(ex);
+					uploadDB.insertError(pt.toString(), seq, ex.getMessage());
 					error = true;
 				}
 			}
@@ -855,6 +863,7 @@ public class API {
 				}
 			} catch (Exception ex) {
 				API.logger.catching(ex);
+				uploadDB.insertError(pt.toString(), "", ex.getMessage());
 				error = true;
 			}
 
@@ -863,6 +872,7 @@ public class API {
 					os.close();
 				} catch (Exception ex) {
 					API.logger.catching(ex);
+					uploadDB.insertError(pt.toString(), "", ex.getMessage());
 					error = true;
 				}
 			}
@@ -871,6 +881,7 @@ public class API {
 					data.close();
 				} catch (Exception ex) {
 					API.logger.catching(ex);
+					uploadDB.insertError(pt.toString(), "", ex.getMessage());
 					error = true;
 				}
 			}

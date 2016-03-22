@@ -2,6 +2,8 @@ package ch.zhaw.mami.db;
 
 import java.util.Date;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 
 import ch.zhaw.mami.RuntimeConfiguration;
@@ -14,6 +16,9 @@ public class UploadDB {
 	private final static Object mutex = new Object();
 	private final MongoCollection<Document> collection;
 	private final MongoCollection<Document> lockCollection;
+	private final MongoCollection<Document> errorCollection;
+
+	private final static Logger logger = LogManager.getLogger(UploadDB.class);
 
 	public UploadDB(final RuntimeConfiguration runtimeConfiguration) {
 		this.runtimeConfiguration = runtimeConfiguration;
@@ -23,6 +28,9 @@ public class UploadDB {
 		lockCollection = runtimeConfiguration.getMongoClient()
 				.getDatabase(runtimeConfiguration.getUploadDBName())
 				.getCollection("locks");
+		errorCollection = runtimeConfiguration.getMongoClient()
+				.getDatabase(runtimeConfiguration.getUploadDBName())
+				.getCollection("upload_errors");
 
 	}
 
@@ -82,6 +90,27 @@ public class UploadDB {
 			lockCollection.insertOne(doc);
 
 			return true;
+		}
+	}
+
+	public void insertError(final String path, String seqKey, final String msg) {
+		synchronized (UploadDB.mutex) {
+			try {
+				if (seqKey == null) {
+					seqKey = "";
+				}
+
+				Document doc = new Document();
+				doc.append("path", path);
+				doc.append("seqKey", seqKey);
+				doc.append("msg", msg);
+				doc.append("timestamp", new Date().getTime() / 1000);
+
+				errorCollection.insertOne(doc);
+			} catch (Exception ex) {
+				UploadDB.logger.catching(ex);
+				UploadDB.logger.fatal("Could not insert error into DB!");
+			}
 		}
 	}
 
