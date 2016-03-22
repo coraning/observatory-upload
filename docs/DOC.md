@@ -122,43 +122,6 @@ a 500 error please notify the hoster of the REST-service.
 
 ### Filesystem Operations
 
-### Create File
-
-**Note**: Do not use this method for regular uploads of regular raw data. This method
-is mainly for debugging purposes. See *Upload Raw Data* REST-method instead!
-
-```POST /fs/touch/{path}```
-```q
-Path Parameters:
-  - path: File path
-```
-
-Creates an empty file on the file system. Requires *admin* permissions. 
-
-### Delete File
-
-*Note*: This does not update the upload database. Use with caution.
-
-```DELETE /fs/rm/{path}```
-```q
-Path Parameters:
-  - path: File path
-```
-
-Deletes a file. Requires *admin* permissions.
-
-### Delete  Recursive
-
-*Note*: This does not update the upload database. Use with caution.
-
-```DELETE /fs/rmR/{path}```
-```q
-Path Parameters:
-  - path: File path
-```
-
-Deletes a directory recursively. Requires *admin* permissions.
-
 ### Download Binary File (Huge File)
 
 ```GET /fs/bin/{path}```

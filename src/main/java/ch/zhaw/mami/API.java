@@ -11,7 +11,6 @@ import java.security.MessageDigest;
 import java.util.Date;
 
 import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
@@ -34,6 +33,7 @@ import org.apache.hadoop.io.SequenceFile.CompressionType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 import ch.zhaw.mami.db.AccessLevels;
@@ -282,6 +282,7 @@ public class API {
 				LocatedFileStatus lfs = files.next();
 				arr.put(lfs.getPath().toString());
 			}
+
 			return API.logger.exit(Response.ok(arr.toString(),
 					MediaType.TEXT_PLAIN).build());
 		} catch (Exception ex) {
@@ -297,6 +298,9 @@ public class API {
 			@PathParam("path") final String path, final InputStream data) {
 
 		API.logger.entry(apiKey, path, data);
+		OutputStream os = null;
+		org.apache.hadoop.fs.Path pt = null;
+		boolean locked = false;
 
 		try {
 			if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_ADMIN)) {
@@ -310,26 +314,64 @@ public class API {
 						.exit(clientError("Invalid path (contains illegal characters or too long)"));
 			}
 
-			org.apache.hadoop.fs.Path pt = new org.apache.hadoop.fs.Path(
+			pt = new org.apache.hadoop.fs.Path(
 					runtimeConfiguration.getPathPrefix() + path);
 
+			locked = uploadDB.getLock(path);
+
+			if (!locked) {
+				return API.logger.exit(clientError("File is busy!"));
+			}
+
 			FileSystem fs = runtimeConfiguration.getFileSystem();
-			OutputStream os = fs.create(pt);
+			os = fs.create(pt);
 
 			byte chunk[] = new byte[runtimeConfiguration.getChunkSize()];
 			int read;
 			while ((read = data.read(chunk)) > 0) {
 				os.write(chunk, 0, read);
 			}
+
 			os.flush();
-			os.close();
-			data.close();
 
 			return API.logger.exit(Response.ok(pt.toString(),
 					MediaType.TEXT_PLAIN).build());
 		} catch (Exception ex) {
 			API.logger.catching(ex);
 			return API.logger.exit(internalError());
+		} finally {
+
+			boolean error = false;
+
+			try {
+				if (locked) {
+					uploadDB.releaseLock(pt.toString());
+				}
+			} catch (Exception ex) {
+				API.logger.catching(ex);
+				error = true;
+			}
+
+			if (os != null) {
+				try {
+					os.close();
+				} catch (Exception ex) {
+					API.logger.catching(ex);
+					error = true;
+				}
+			}
+			if (data != null) {
+				try {
+					data.close();
+				} catch (Exception ex) {
+					API.logger.catching(ex);
+					error = true;
+				}
+			}
+
+			if (error) {
+				return API.logger.exit(internalError());
+			}
 		}
 	}
 
@@ -339,6 +381,8 @@ public class API {
 			@PathParam("path") final String path) {
 
 		API.logger.entry(apiKey, path);
+
+		BufferedReader br = null;
 
 		try {
 			if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_READ)) {
@@ -365,15 +409,14 @@ public class API {
 						.exit(generic404("Not a file: " + pt.getName()));
 			}
 
-			BufferedReader br = new BufferedReader(new InputStreamReader(
-					runtimeConfiguration.getFileSystem().open(pt)));
+			br = new BufferedReader(new InputStreamReader(runtimeConfiguration
+					.getFileSystem().open(pt)));
 
 			StringBuilder sb = new StringBuilder();
 			String line;
 			while ((line = br.readLine()) != null) {
 				sb.append(line + "\n");
 			}
-			br.close();
 
 			return API.logger.exit(allowCORS(
 					Response.ok(sb.toString(), MediaType.TEXT_PLAIN)).build());
@@ -381,6 +424,13 @@ public class API {
 		} catch (Exception ex) {
 			API.logger.catching(ex);
 			return API.logger.exit(internalError());
+		} finally {
+			try {
+				br.close();
+			} catch (Exception ex) {
+				API.logger.catching(ex);
+				return API.logger.exit(internalError());
+			}
 		}
 	}
 
@@ -390,98 +440,6 @@ public class API {
 		API.logger.entry(apiKey);
 		authDB.revoke(apiKey);
 		return API.logger.exit(Response.ok("OK", MediaType.TEXT_PLAIN).build());
-	}
-
-	@Path("fs/rm/{path:.+}")
-	@DELETE
-	public Response rm(@HeaderParam("X-API_KEY") final String apiKey,
-			@PathParam("path") final String path) {
-		API.logger.entry(apiKey, path);
-
-		try {
-			if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_ADMIN)) {
-				return API.logger.exit(accessError());
-			}
-
-			logDB.insertLogEntry(path, "rm", authDB.getName(apiKey));
-
-			if (!Util.validatePath(path)) {
-				return API.logger
-						.exit(clientError("Invalid path (contains illegal characters or too long)"));
-			}
-
-			org.apache.hadoop.fs.Path pt = new org.apache.hadoop.fs.Path(
-					runtimeConfiguration.getPathPrefix() + path);
-
-			FileSystem fs = runtimeConfiguration.getFileSystem();
-
-			if (!fs.exists(pt)) {
-				return API.logger.exit(generic404("File not found: "
-						+ pt.getName()));
-			}
-
-			if (!fs.isFile(pt)) {
-				return API.logger
-						.exit(generic404("Not a file: " + pt.getName()));
-			}
-
-			if (!fs.delete(pt, false)) {
-				return API.logger.exit(clientError("Delete failed!"));
-			}
-
-			return API.logger.exit(Response.ok("OK", MediaType.TEXT_PLAIN)
-					.build());
-
-		} catch (Exception ex) {
-			API.logger.catching(ex);
-			return API.logger.exit(internalError());
-		}
-	}
-
-	@Path("fs/rmR/{path:.+}")
-	@DELETE
-	public Response rmR(@HeaderParam("X-API_KEY") final String apiKey,
-			@PathParam("path") final String path) {
-		API.logger.entry(apiKey, path);
-
-		try {
-			if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_ADMIN)) {
-				return API.logger.exit(accessError());
-			}
-
-			logDB.insertLogEntry(path, "rmR", authDB.getName(apiKey));
-
-			if (!Util.validatePath(path)) {
-				return API.logger
-						.exit(clientError("Invalid path (contains illegal characters or too long)"));
-			}
-
-			org.apache.hadoop.fs.Path pt = new org.apache.hadoop.fs.Path(
-					runtimeConfiguration.getPathPrefix() + path);
-
-			FileSystem fs = runtimeConfiguration.getFileSystem();
-
-			if (!fs.exists(pt)) {
-				return API.logger.exit(generic404("File not found: "
-						+ pt.getName()));
-			}
-
-			if (!fs.isFile(pt)) {
-				return API.logger
-						.exit(generic404("Not a file: " + pt.getName()));
-			}
-
-			if (!fs.delete(pt, true)) {
-				return API.logger.exit(clientError("Delete failed!"));
-			}
-
-			return API.logger.exit(Response.ok("OK", MediaType.TEXT_PLAIN)
-					.build());
-
-		} catch (Exception ex) {
-			API.logger.catching(ex);
-			return API.logger.exit(internalError());
-		}
 	}
 
 	@Path("fs/seq/bin/{path:.+}")
@@ -675,6 +633,8 @@ public class API {
 		API.logger.entry(meta, data, fileName);
 
 		SequenceFile.Writer seqWriter = null;
+		org.apache.hadoop.fs.Path pt = null;
+		boolean locked = false;
 
 		try {
 			if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_WRITE)) {
@@ -682,8 +642,6 @@ public class API {
 			}
 
 			logDB.insertLogEntry(fileName, "sequp", authDB.getName(apiKey));
-
-			OutputStream os = null;
 
 			JSONObject obj = null;
 
@@ -714,10 +672,12 @@ public class API {
 
 			String seq = obj.getString("seq");
 
-			org.apache.hadoop.fs.Path pt = new org.apache.hadoop.fs.Path(
+			pt = new org.apache.hadoop.fs.Path(
 					runtimeConfiguration.getPathPrefix()
 							+ obj.getString("msmntCampaign") + "/"
 							+ obj.getString("format") + "/" + seq + ".seq");
+
+			locked = uploadDB.getLock(pt.toString());
 
 			FileSystem fs = runtimeConfiguration.getFileSystem();
 
@@ -752,17 +712,34 @@ public class API {
 			uploadDB.completeSeqUpload(pt.toString(), fileName, digest);
 
 			return API.logger.exit(Response.ok(digest).build());
+		} catch (JSONException ex) {
+			API.logger.catching(ex);
+			return API.logger.exit(clientError("Invalid JSON!"));
 		} catch (Exception ex) {
 			API.logger.catching(ex);
 			return API.logger.exit(internalError());
 		} finally {
+			boolean error = false;
+
+			if (locked) {
+				try {
+					uploadDB.releaseLock(pt.toString());
+				} catch (Exception ex) {
+					API.logger.catching(ex);
+					error = true;
+				}
+			}
 			if (seqWriter != null) {
 				try {
 					seqWriter.close();
 				} catch (Exception ex) {
 					API.logger.catching(ex);
-					return API.logger.exit(internalError());
+					error = true;
 				}
+			}
+
+			if (error) {
+				API.logger.exit(internalError());
 			}
 		}
 	}
@@ -775,51 +752,18 @@ public class API {
 				.build());
 	}
 
-	@Path("fs/touch/{path:.+}")
-	@GET
-	public Response touch(@HeaderParam("X-API-KEY") final String apiKey,
-			@PathParam("path") final String path) {
-
-		API.logger.entry(apiKey, path);
-
-		try {
-			if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_ADMIN)) {
-				return API.logger.exit(accessError());
-			}
-
-			logDB.insertLogEntry(path, "touch", authDB.getName(apiKey));
-
-			if (!Util.validatePath(path)) {
-				return API.logger
-						.exit(clientError("Invalid path (contains illegal characters or too long)"));
-			}
-
-			org.apache.hadoop.fs.Path pt = new org.apache.hadoop.fs.Path(
-					runtimeConfiguration.getPathPrefix() + path);
-
-			FileSystem fs = runtimeConfiguration.getFileSystem();
-
-			if (fs.exists(pt)) {
-				return API.logger.exit(clientError("Path already exists."));
-			}
-
-			fs.create(pt);
-			return API.logger.exit(Response.ok(pt.toString(),
-					MediaType.TEXT_PLAIN).build());
-		} catch (Exception ex) {
-			API.logger.catching(ex);
-			return API.logger.exit(internalError());
-		}
-	}
-
 	@Path("up/{fileName}")
 	@POST
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	public Response upload(@FormDataParam("meta") final String meta,
-			@FormDataParam("data") InputStream data,
+			@FormDataParam("data") final InputStream data,
 			@PathParam("fileName") final String fileName,
 			@HeaderParam("X-API-KEY") final String apiKey) {
 		API.logger.entry(meta, data);
+
+		OutputStream os = null;
+		org.apache.hadoop.fs.Path pt = null;
+		boolean locked = false;
 
 		try {
 			if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_WRITE)) {
@@ -827,8 +771,6 @@ public class API {
 			}
 
 			logDB.insertLogEntry(fileName, "up", authDB.getName(apiKey));
-
-			OutputStream os = null;
 
 			JSONObject obj = null;
 
@@ -855,7 +797,7 @@ public class API {
 						.exit(clientError("Invalid file name (contains illegal characters or too long)"));
 			}
 
-			org.apache.hadoop.fs.Path pt = new org.apache.hadoop.fs.Path(
+			pt = new org.apache.hadoop.fs.Path(
 					runtimeConfiguration.getPathPrefix()
 							+ obj.getString("msmntCampaign") + "/"
 							+ obj.getString("format") + "/" + fileName);
@@ -867,6 +809,12 @@ public class API {
 			}
 
 			MessageDigest md = MessageDigest.getInstance("SHA-1");
+
+			locked = uploadDB.getLock(pt.toString());
+
+			if (!locked) {
+				return API.logger.exit(clientError("File is busy!"));
+			}
 
 			if (!uploadDB.insertUpload(pt.toString(), meta,
 					authDB.getName(apiKey))) {
@@ -884,11 +832,6 @@ public class API {
 			}
 
 			os.flush();
-			os.close();
-			data.close();
-
-			os = null;
-			data = null;
 
 			String digest = Util.byteArr2HexStr(md.digest());
 
@@ -896,9 +839,45 @@ public class API {
 
 			return API.logger.exit(Response.ok(digest).build());
 
+		} catch (JSONException ex) {
+			API.logger.catching(ex);
+			return API.logger.exit(clientError("Invalid JSON!"));
 		} catch (Exception ex) {
 			API.logger.catching(ex);
 			return API.logger.exit(internalError());
+		} finally {
+
+			boolean error = false;
+
+			try {
+				if (locked) {
+					uploadDB.releaseLock(pt.toString());
+				}
+			} catch (Exception ex) {
+				API.logger.catching(ex);
+				error = true;
+			}
+
+			if (os != null) {
+				try {
+					os.close();
+				} catch (Exception ex) {
+					API.logger.catching(ex);
+					error = true;
+				}
+			}
+			if (data != null) {
+				try {
+					data.close();
+				} catch (Exception ex) {
+					API.logger.catching(ex);
+					error = true;
+				}
+			}
+
+			if (error) {
+				return API.logger.exit(internalError());
+			}
 		}
 	}
 }

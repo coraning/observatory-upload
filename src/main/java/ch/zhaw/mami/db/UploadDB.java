@@ -1,5 +1,7 @@
 package ch.zhaw.mami.db;
 
+import java.util.Date;
+
 import org.bson.Document;
 
 import ch.zhaw.mami.RuntimeConfiguration;
@@ -11,12 +13,16 @@ public class UploadDB {
 	private final RuntimeConfiguration runtimeConfiguration;
 	private final static Object mutex = new Object();
 	private final MongoCollection<Document> collection;
+	private final MongoCollection<Document> lockCollection;
 
 	public UploadDB(final RuntimeConfiguration runtimeConfiguration) {
 		this.runtimeConfiguration = runtimeConfiguration;
 		collection = runtimeConfiguration.getMongoClient()
 				.getDatabase(runtimeConfiguration.getUploadDBName())
 				.getCollection("uploads");
+		lockCollection = runtimeConfiguration.getMongoClient()
+				.getDatabase(runtimeConfiguration.getUploadDBName())
+				.getCollection("locks");
 
 	}
 
@@ -56,6 +62,29 @@ public class UploadDB {
 		}
 	}
 
+	public boolean getLock(final String path) {
+		synchronized (UploadDB.mutex) {
+			Document queryDoc = new Document();
+			queryDoc.append("path", path);
+
+			/* Entry with path exists. */
+			FindIterable<Document> results = lockCollection.find(queryDoc);
+			for (Document doc : results) {
+				return false;
+			}
+
+			/* Does not exist. Let's create it then */
+
+			Document doc = new Document();
+			doc.append("path", path);
+			doc.append("timestamp", new Date().getTime() / 1000);
+
+			lockCollection.insertOne(doc);
+
+			return true;
+		}
+	}
+
 	public boolean insertSeqUpload(final String path, final String jsonData,
 			final String seqKey, final String name) {
 		synchronized (UploadDB.mutex) {
@@ -72,6 +101,7 @@ public class UploadDB {
 			doc.append("complete", false);
 			doc.append("seqKey", seqKey);
 			doc.append("uploader", name);
+			doc.append("timestamp", new Date().getTime() / 1000);
 
 			collection.insertOne(doc);
 
@@ -98,6 +128,16 @@ public class UploadDB {
 
 			return true;
 		}
+	}
+
+	public boolean releaseLock(final String path) {
+		synchronized (UploadDB.mutex) {
+			Document queryDoc = new Document();
+			queryDoc.append("path", path);
+
+			lockCollection.deleteOne(queryDoc);
+		}
+		return false;
 	}
 
 	public boolean seqUploadExists(final String path, final String seqKey) {
