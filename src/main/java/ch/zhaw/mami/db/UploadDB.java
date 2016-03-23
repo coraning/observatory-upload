@@ -152,6 +152,7 @@ public class UploadDB {
 			doc.append("sha1", "");
 			doc.append("complete", false);
 			doc.append("uploader", name);
+			doc.append("timestamp", new Date().getTime() / 1000);
 
 			collection.insertOne(doc);
 

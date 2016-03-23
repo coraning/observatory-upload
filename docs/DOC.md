@@ -71,10 +71,12 @@ The schema is:
 ```q
 {"_id":<id>,
  "api_key":<api_key>,
- "access_level":<access_level>}
+ "access_level":<access_level>,
+ "name":<name>}
 ```
 
-Uses the collection ```api_keys``` in the *AUTH_DB_NAME* database.
+Uses the collection ```api_keys``` in the *AUTH_DB_NAME* database. *name* is the (short-)name of
+the person the API-Key belongs to. 
 
 ## UploadDB
 
@@ -87,14 +89,24 @@ The schema is:
  "complete":<boolean>,
  "sha1":<sha1 hash of file contents>,
  "meta":<metadata>,
- "uploader":<name of the uploader}
+ "uploader":<name of the uploader,
+ "seqKey":<seqKey>,
+ "timestamp":<time of upload (unix timestamp)>}
 ```
 
 *metadata* refers to the metadata specified by the uploader of the file when calling the *Upload Raw Data* REST-method. It may be an arbitrary JSON document but it includes at least ```msmntCampaign``` and ```format``` (see *Upload Raw Data* REST-method).
-An API-Key has a name associated which is stored as *uploader* in each entry in the collection. 
+An API-Key has a name associated which is stored as *uploader* in each entry in the collection. *seqKey* is used when the file is placed in a SequenceFile. 
 
 Uses the collection ```uploads``` in the *UPLOAD_DB_NAME* database.
 
+The collection ```upload_errors`` in the UploadDB is used for debugging. If upload fails an entry is created. The schema is:
+
+```
+{"path":<path>,
+ "seqKey":<seqKey>,
+ "msg":<errmsg>,
+ "timestamp":<time of error (unix timestamp>)}
+```
 
 ### SequenceFiles
 
