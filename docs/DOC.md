@@ -137,10 +137,11 @@ The access log database (LogDB) stores the access log. The access log records al
 
 Several different access levels exist. These are:
 
-* none: Dummy access level. No special permissions.
-* read: Permission to read files and list directory contents.
-* write: Permission to upload new raw data.
-* admin: Permission to delete, rename and create files.
+* read: Permission to read files and list directory contents. (value: 1)
+* write: Permission to upload new raw data. (value: 2)
+* admin: Special permissions. (value: 4)
+
+See also section *AuthDB*. 
 
 ## API-Keys
 
