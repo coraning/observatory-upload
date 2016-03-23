@@ -34,17 +34,34 @@ You can override that path by setting the `MAMI_HDFS_CFG_PATH` java system prope
 
 ### Settings
 
+An example configuration might look like this:
+
+```
+URL=http://localhost:9998/
+HDFS_PATH=hdfs://localhost:9000/test
+AUTH_DB_NAME=auth
+UPLOAD_DB_NAME=uploads
+```
+
 #### AUTH_DB_NAME
 
 Name of the database used to store authentication information. 
+
+### LOG_DB_NAME
+
+Name of the database used to store the access log.
+
+### HDFS_PATH
+
+Path to the HDFS file system. 
 
 #### UPLOAD_DB_NAME
 
 Name of the database used to store upload information.
 
-### LOG_DB_NAME
+### URL
 
-Name of the database used to store the access log.
+The URL the REST service will be run at (this also defines the port it will listen on).
 
 ## AuthDB
 
