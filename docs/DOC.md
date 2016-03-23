@@ -76,7 +76,14 @@ The schema is:
 ```
 
 Uses the collection ```api_keys``` in the *AUTH_DB_NAME* database. *name* is the (short-)name of
-the person the API-Key belongs to. 
+the person the API-Key belongs to. *access_level* is an integer value with flags set: 
+
+```
+read = 1
+write = 2
+read/write = 1 OR 2 = 3
+admin = 4
+```
 
 ## UploadDB
 

@@ -15,14 +15,14 @@ public class App {
 
 	public static void main(final String[] args) throws Exception {
 
-		final String baseUri = RuntimeConfiguration.getInstance().getURL();
-		final Map<String, String> initParams = new HashMap<String, String>();
-
 		if (System.getProperty("log4j.configurationFile") == null) {
 			System.out.println("Using default /etc/hdfs-mami/logger.xml!");
 			System.setProperty("log4j.configurationFile",
 					"/etc/hdfs-mami/logger.xml");
 		}
+
+		final String baseUri = RuntimeConfiguration.getInstance().getURL();
+		final Map<String, String> initParams = new HashMap<String, String>();
 
 		initParams.put("com.sun.jersey.config.property.packages",
 				"ch.zhaw.mami");
