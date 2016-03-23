@@ -106,7 +106,7 @@ An API-Key has a name associated which is stored as *uploader* in each entry in 
 
 Uses the collection ```uploads``` in the *UPLOAD_DB_NAME* database.
 
-The collection ```upload_errors`` in the UploadDB is used for debugging. If upload fails an entry is created. The schema is:
+The collection ```upload_errors``` in the UploadDB is used for debugging. If upload fails an entry is created. The schema is:
 
 ```q
 {"path":<path>,
@@ -266,6 +266,7 @@ Accepts: multipart/form-data
 Form Data Parameters:
   - meta: Metadata associated with the file.
   - data: raw data
+Returns: text/plain
 ```
 
 *meta* must be valid JSON and must contain ```msmntCampaign (String)```,
@@ -278,6 +279,7 @@ it will be created if neccessary.
 
 Upon initiating an upload an entry in the *upload* database will be created with the flag
 ```complete``` set to ```false```. After completing the upload the database entry will be updated and ```complete``` will be set to ```true```. A SHA1 hash of the uploaded data will be stored in the *upload* database as well.
+Returns the SHA1 hash of the data received. 
 
 Requires *write* permissions.
 
@@ -301,6 +303,7 @@ Accepts: multipart/form-data
 Form Data Parameters:
   - meta: Metadata associated with the file. 
   - data: raw data.
+Returns: text/plain
 ```
 *meta* must be valid JSON and must contain ```msmntCampaign (String)``` and
 ```format (String)``` as for example ```{"msmntCampaign" : "cmp000", "format" : "csv-foo"}```.
@@ -308,7 +311,7 @@ Form Data Parameters:
 Upon initiating an upload an entry in the *upload* database will be created with the flag
 ```complete``` set to ```false```. After completing the upload the database entry will be updated and ```complete``` will be set to ```true```. A SHA1 hash of the uploaded data will be stored in the *upload* database as well.
 
-The file will be stored under ```WHDFS_PATH + '/' + msmntCampaign + '/' + format + '/' fileName```. 
+The file will be stored under ```WHDFS_PATH + '/' + msmntCampaign + '/' + format + '/' fileName```. Returns the SHA1 hash of the data received. 
 
 Requires *write* permissions.
 
