@@ -29,6 +29,9 @@ this is two
 
 ## Configuration
 
+The config file will be loaded from `/etc/hdfs-mami/srvc.cfg` per default. 
+You can override that path by setting the `MAMI_HDFS_CFG_PATH` java system property. 
+
 ### Settings
 
 #### AUTH_DB_NAME
