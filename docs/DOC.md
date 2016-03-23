@@ -78,7 +78,7 @@ The schema is:
 Uses the collection ```api_keys``` in the *AUTH_DB_NAME* database. *name* is the (short-)name of
 the person the API-Key belongs to. *access_level* is an integer value with flags set: 
 
-```
+```q
 read = 1
 write = 2
 read/write = 1 OR 2 = 3
@@ -108,7 +108,7 @@ Uses the collection ```uploads``` in the *UPLOAD_DB_NAME* database.
 
 The collection ```upload_errors`` in the UploadDB is used for debugging. If upload fails an entry is created. The schema is:
 
-```
+```q
 {"path":<path>,
  "seqKey":<seqKey>,
  "msg":<errmsg>,
