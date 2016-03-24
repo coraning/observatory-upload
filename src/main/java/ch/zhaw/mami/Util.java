@@ -46,7 +46,7 @@ public class Util {
 			return false;
 		}
 
-		if (string.length() > 10) {
+		if (string.length() > 32) {
 			return false;
 		}
 
