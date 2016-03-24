@@ -103,6 +103,7 @@ The schema is:
 
 *metadata* refers to the metadata specified by the uploader of the file when calling the *Upload Raw Data* REST-method. It may be an arbitrary JSON document but it includes at least ```msmntCampaign``` and ```format``` (see *Upload Raw Data* REST-method).
 An API-Key has a name associated which is stored as *uploader* in each entry in the collection. *seqKey* is used when the file is placed in a SequenceFile. 
+*msmntCampaign* and *format* must satisfy the regex `[a-zA-Z0-9\-]*`. In *seqKey* a dot is allowed (but not two dots in a row).
 
 Uses the collection ```uploads``` in the *UPLOAD_DB_NAME* database.
 
@@ -272,7 +273,8 @@ Returns: text/plain
 *meta* must be valid JSON and must contain ```msmntCampaign (String)```,
 ```format (String)``` and ```seq (String)```. 
 ```seq``` is an identifier (such as for example ```0000```) which identifies
-the SequenceFile to put the new data into. 
+the SequenceFile to put the new data into. *msmntCampaign* and *format* must satisfy the regex `[a-zA-Z0-9\-]*`.
+In *seq* a dot is allowed (but not two dots in a row).
 
 The SequenceFile used will be ```WHDFS_PATH + '/' + msmntCampaign + '/' + format + '/' + seq + '.seq'``` and
 it will be created if neccessary. 
@@ -306,7 +308,7 @@ Form Data Parameters:
 Returns: text/plain
 ```
 *meta* must be valid JSON and must contain ```msmntCampaign (String)``` and
-```format (String)``` as for example ```{"msmntCampaign" : "cmp000", "format" : "csv-foo"}```.
+```format (String)``` as for example ```{"msmntCampaign" : "cmp000", "format" : "csv-foo"}```. *msmntCampaign* and *format* must satisfy the regex `[a-zA-Z0-9\-]*`.
 
 Upon initiating an upload an entry in the *upload* database will be created with the flag
 ```complete``` set to ```false```. After completing the upload the database entry will be updated and ```complete``` will be set to ```true```. A SHA1 hash of the uploaded data will be stored in the *upload* database as well.
