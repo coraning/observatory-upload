@@ -117,6 +117,14 @@ The collection ```upload_errors``` in the UploadDB is used for debugging. If upl
  "timestamp":<time of error (unix timestamp>)}
 ```
 
+The collection ```locks``` in the UploadDB is used by the service to prevent concurrent uploads into the same SequenceFile
+and concurrent uploads to the same path. Other processes MUST NOT write to this collection. The schema is:
+
+```q
+{"path":<path>,
+ "timestamp":<timestamp (unix timestamp>)}
+```
+
 ### SequenceFiles
 
 If the file was uploaded as part of a SequenceFile then the *path* will point to the sequence file and 

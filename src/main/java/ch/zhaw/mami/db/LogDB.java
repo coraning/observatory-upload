@@ -9,26 +9,27 @@ import ch.zhaw.mami.RuntimeConfiguration;
 import com.mongodb.client.MongoCollection;
 
 public class LogDB {
-	private final RuntimeConfiguration runtimeConfiguration;
-	private final static Object mutex = new Object();
-	private final MongoCollection<Document> collection;
 
-	public LogDB(final RuntimeConfiguration runtimeConfiguration) {
-		this.runtimeConfiguration = runtimeConfiguration;
-		collection = runtimeConfiguration.getMongoClient()
-				.getDatabase(runtimeConfiguration.getLogDBName())
-				.getCollection("log");
+    private final RuntimeConfiguration runtimeConfiguration;
+    private final static Object mutex = new Object();
+    private final MongoCollection<Document> collection;
 
-	}
+    public LogDB(final RuntimeConfiguration runtimeConfiguration) {
+        this.runtimeConfiguration = runtimeConfiguration;
+        collection = runtimeConfiguration.getMongoClient()
+                .getDatabase(runtimeConfiguration.getLogDBName())
+                .getCollection("log");
 
-	public void insertLogEntry(final String path, final String action,
-			final String name) {
+    }
 
-		Document doc = new Document();
-		doc.append("path", path);
-		doc.append("action", action);
-		doc.append("name", name);
-		doc.append("timestamp", new Date().toGMTString());
-		collection.insertOne(doc);
-	}
+    public void insertLogEntry(final String path, final String action,
+            final String name) {
+
+        Document doc = new Document();
+        doc.append("path", path);
+        doc.append("action", action);
+        doc.append("name", name);
+        doc.append("timestamp", new Date().toGMTString());
+        collection.insertOne(doc);
+    }
 }
