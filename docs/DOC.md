@@ -172,6 +172,58 @@ a 500 error please notify the hoster of the REST-service.
 
 ### Filesystem Operations
 
+### Check File
+
+```GET /fs/check/{path}?fileName={fileName}```
+```q
+```
+Path Parameters:
+  - path: Path to the sequence file
+Query Parameters:
+  - fileName: Name of the file in the sequence file (key)
+Returns: application/json
+```
+
+This performs an integrity check. It will check if an upload entry in the UploadDB is present and if the file is present.
+If the file is present it will read it and calculate its SHA-1 hash. This method will return the upload entry together with the
+results of the check:
+
+```json
+{ "uploadEntryPresent" : true,
+  "filePresent" : true,
+  "path" : "hdfs://...../test/testing/txt/0003.seq", 
+  "uploadEntry" : { "_id" : { "$oid" : "56f10253f2498617749d9b7d" },
+                              "complete" : true, 
+                              "meta" : { 
+                                "msmntCampaign" : "testing", 
+                                "format" : "txt", 
+                                "seq" : "0003" }, 
+                    "path" : "hdfs://srv-lab-t-425:9000/test/testing/txt/0003.seq", 
+                    "seqKey" : "small9.txt",
+                    "sha1" : "b56de6dcf8dcd56d6a0603d8d1b6ece0673384b3", 
+                    "timestamp" : { "$numberLong" : "1458635347" }, 
+                    "uploader" : "n/a" },
+  "locked" : false, 
+  "fileInSeqFile" : true,
+  "fileSha1" : "b56de6dcf8dcd56d6a0603d8d1b6ece0673384b3" }
+```
+
+*uploadEntryPresent* indicates if an upload entry exists, *filePresent* indicates if the (sequence) file exists, *uploadEntry* is the
+upload entry, *locked* indicates whether the file had a lock in the UploadDB, *fileInSeqFile* indicates whether the file exists within
+the sequence file, *fileSha1* is the hash of the data. *fileSha1* should match *uploadEntry / sha1*. 
+
+### Check File (Huge File)
+
+```GET /fs/check/{path}```
+```q
+Path Parameters:
+  - path: Path to the file
+Returns: application/json
+```
+
+This performs an integrity check. See *Check File* for more. When checking huge files (not within a sequence file) the *fileInSeqFile* 
+will be missing but otherwise the response is the same as in *Check File*. 
+
 ### Download Binary File (Huge File)
 
 ```GET /fs/bin/{path}```

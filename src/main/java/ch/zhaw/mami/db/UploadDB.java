@@ -98,6 +98,22 @@ public class UploadDB {
         }
     }
 
+    public Document getSeqUploadEntry(final String path, final String seqKey) {
+        synchronized (UploadDB.mutex) {
+            Document queryDoc = new Document();
+
+            queryDoc.append("path", path);
+            queryDoc.append("seqKey", seqKey);
+
+            FindIterable<Document> results = collection.find(queryDoc);
+            for (Document doc : results) {
+                return doc;
+            }
+
+            return null;
+        }
+    }
+
     public Document getUploadEntry(final String path) {
         synchronized (UploadDB.mutex) {
             Document queryDoc = new Document();

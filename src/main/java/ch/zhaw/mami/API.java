@@ -173,6 +173,13 @@ public class API {
             pt = new org.apache.hadoop.fs.Path(
                     runtimeConfiguration.getPathPrefix() + path);
 
+            logDB.insertLogEntry(path, "check", authDB.getName(apiKey));
+
+            if (!Util.validatePath(path)) {
+                return API.logger
+                        .exit(clientError("Invalid path (contains illegal characters or too long)"));
+            }
+
             if (uploadDB.uploadExists(pt.toString())) {
                 uploadEntryPresent = true;
             }
@@ -251,15 +258,18 @@ public class API {
             return API.logger.exit(internalError());
         } finally {
             boolean error = false;
+
+            try {
+                is.close();
+            } catch (Exception ex) {
+                API.logger.catching(ex);
+                error = true;
+            }
+
             try {
                 if (locked) {
                     uploadDB.releaseLock(pt.toString());
                 }
-            } catch (Exception ex) {
-                error = true;
-            }
-            try {
-                is.close();
             } catch (Exception ex) {
                 API.logger.catching(ex);
                 error = true;
@@ -467,16 +477,6 @@ public class API {
 
             boolean error = false;
 
-            try {
-                if (locked) {
-                    uploadDB.releaseLock(pt.toString());
-                }
-            } catch (Exception ex) {
-                API.logger.catching(ex);
-                uploadDB.insertError(pt.toString(), null, ex.getMessage());
-                error = true;
-            }
-
             if (os != null) {
                 try {
                     os.close();
@@ -494,6 +494,16 @@ public class API {
                     API.logger.catching(ex);
                     error = true;
                 }
+            }
+
+            try {
+                if (locked) {
+                    uploadDB.releaseLock(pt.toString());
+                }
+            } catch (Exception ex) {
+                API.logger.catching(ex);
+                uploadDB.insertError(pt.toString(), null, ex.getMessage());
+                error = true;
             }
 
             if (error) {
@@ -633,6 +643,149 @@ public class API {
 
     }
 
+    @GET
+    @Path("fs/seq/check/{path:.+}")
+    public Response seqCheck(@HeaderParam("X-API-KEY") final String apiKey,
+            @PathParam("path") final String path,
+            @QueryParam("fileName") final String fileName) {
+        boolean locked = false;
+        boolean uploadEntryPresent = false;
+        boolean filePresent = false;
+
+        org.apache.hadoop.fs.Path pt = null;
+        SequenceFile.Reader seqReader = null;
+
+        try {
+            if (!checkAccessLevel(apiKey, AccessLevels.ACCESS_FS_READ)) {
+                return API.logger.exit(accessError());
+            }
+
+            pt = new org.apache.hadoop.fs.Path(
+                    runtimeConfiguration.getPathPrefix() + path);
+
+            logDB.insertLogEntry(path, "check", authDB.getName(apiKey));
+
+            if (!Util.validatePath(path)) {
+                return API.logger
+                        .exit(clientError("Invalid path (contains illegal characters or too long)"));
+            }
+
+            if (!Util.validateFileName(fileName)) {
+                return API.logger
+                        .exit(clientError("Invalid file name (contains illegal characters or too long)"));
+            }
+
+            if (uploadDB.seqUploadExists(pt.toString(), fileName)) {
+                uploadEntryPresent = true;
+            }
+
+            FileSystem fs = runtimeConfiguration.getFileSystem();
+
+            if (fs.exists(pt)) {
+                if (fs.isFile(pt)) {
+                    filePresent = true;
+                }
+            }
+
+            Document doc = new Document();
+            doc.append("uploadEntryPresent", uploadEntryPresent);
+            doc.append("filePresent", filePresent);
+            doc.append("path", pt.toString());
+
+            /* if none of those exist we can't do much checking */
+            if (!uploadEntryPresent && !filePresent) {
+                return API.logger.exit(Response.ok(doc.toJson(),
+                        MediaType.APPLICATION_JSON).build());
+            }
+
+            /*
+             * if the file is not present we can only return the upload entry.
+             */
+            if (!filePresent && uploadEntryPresent) {
+
+                doc.append("uploadEntry",
+                        uploadDB.getSeqUploadEntry(pt.toString(), fileName));
+                return API.logger.exit(Response.ok(doc.toJson(),
+                        MediaType.APPLICATION_JSON).build());
+            }
+
+            /* at this point at least the file is present */
+            locked = uploadDB.getLock(pt.toString());
+
+            if (uploadEntryPresent) {
+                doc.append("uploadEntry",
+                        uploadDB.getSeqUploadEntry(pt.toString(), fileName));
+            }
+
+            if (!locked) {
+                /* if we couldn't acquire the lock then the file is busy */
+                doc.append("locked", true);
+                /* we're not going to read files that have locks */
+                return API.logger.exit(Response.ok(doc.toJson(),
+                        MediaType.APPLICATION_JSON).build());
+            }
+            else {
+                doc.append("locked", false); // the file is not locked and we
+                                             // hold the lock now.
+            }
+
+            seqReader = new SequenceFile.Reader(
+                    runtimeConfiguration.getFSConfiguration(),
+                    SequenceFile.Reader.file(pt));
+
+            BytesWritable key = new BytesWritable();
+            String digest = "";
+            boolean fileInSeqFile = false;
+
+            while (seqReader.next(key)) {
+                String keyAsStr = new String(key.getBytes(), 0, key.getLength());
+                if (keyAsStr.equals(fileName)) {
+                    BytesWritable value = new BytesWritable();
+                    seqReader.getCurrentValue(value);
+                    MessageDigest md = MessageDigest.getInstance("SHA-1");
+                    md.update(value.getBytes(), 0, value.getLength());
+                    digest = Util.byteArr2HexStr(md.digest());
+                    fileInSeqFile = true;
+                    break;
+                }
+            }
+
+            doc.append("fileInSeqFile", fileInSeqFile);
+            doc.append("fileSha1", digest);
+
+            return API.logger.exit(Response.ok(doc.toJson(),
+                    MediaType.APPLICATION_JSON).build());
+
+        } catch (Exception ex) {
+            API.logger.catching(ex);
+            return API.logger.exit(internalError());
+        } finally {
+            boolean error = false;
+
+            try {
+                if (seqReader != null) {
+                    seqReader.close();
+                }
+            } catch (Exception ex) {
+                API.logger.catching(ex);
+                error = true;
+            }
+
+            try {
+                if (locked) {
+                    uploadDB.releaseLock(pt.toString());
+                }
+            } catch (Exception ex) {
+                API.logger.catching(ex);
+                error = true;
+            }
+
+            if (error) {
+                return API.logger.exit(internalError());
+            }
+        }
+    }
+
     @Path("fs/seq/ls/{path:.+}")
     @GET
     public Response seqLs(@PathParam("path") final String path,
@@ -668,8 +821,6 @@ public class API {
                 String keyAsStr = new String(key.getBytes(), 0, key.getLength());
                 arr.put(keyAsStr);
             }
-
-            seqReader.close();
 
             return API.logger.exit(Response.ok(arr.toString(),
                     MediaType.APPLICATION_JSON).build());
@@ -731,8 +882,6 @@ public class API {
                             MediaType.TEXT_PLAIN).build());
                 }
             }
-
-            seqReader.close();
 
             return API.logger
                     .exit(generic404("File not found in sequence file!"));
@@ -837,7 +986,6 @@ public class API {
             seqWriter.append(key, val);
             seqWriter.hflush();
             seqWriter.hsync();
-            seqWriter.close();
 
             uploadDB.completeSeqUpload(pt.toString(), fileName, digest);
 
@@ -852,18 +1000,19 @@ public class API {
         } finally {
             boolean error = false;
 
-            if (locked) {
+            if (seqWriter != null) {
                 try {
-                    uploadDB.releaseLock(pt.toString());
+                    seqWriter.close();
                 } catch (Exception ex) {
                     API.logger.catching(ex);
                     uploadDB.insertError(pt.toString(), seq, ex.getMessage());
                     error = true;
                 }
             }
-            if (seqWriter != null) {
+
+            if (locked) {
                 try {
-                    seqWriter.close();
+                    uploadDB.releaseLock(pt.toString());
                 } catch (Exception ex) {
                     API.logger.catching(ex);
                     uploadDB.insertError(pt.toString(), seq, ex.getMessage());
@@ -982,16 +1131,6 @@ public class API {
 
             boolean error = false;
 
-            try {
-                if (locked) {
-                    uploadDB.releaseLock(pt.toString());
-                }
-            } catch (Exception ex) {
-                API.logger.catching(ex);
-                uploadDB.insertError(pt.toString(), "", ex.getMessage());
-                error = true;
-            }
-
             if (os != null) {
                 try {
                     os.close();
@@ -1009,6 +1148,16 @@ public class API {
                     uploadDB.insertError(pt.toString(), "", ex.getMessage());
                     error = true;
                 }
+            }
+
+            try {
+                if (locked) {
+                    uploadDB.releaseLock(pt.toString());
+                }
+            } catch (Exception ex) {
+                API.logger.catching(ex);
+                uploadDB.insertError(pt.toString(), "", ex.getMessage());
+                error = true;
             }
 
             if (error) {
