@@ -176,7 +176,6 @@ a 500 error please notify the hoster of the REST-service.
 
 ```GET /fs/check/{path}?fileName={fileName}```
 ```q
-```
 Path Parameters:
   - path: Path to the sequence file
 Query Parameters:
