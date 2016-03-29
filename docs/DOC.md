@@ -211,6 +211,8 @@ results of the check:
 upload entry, *locked* indicates whether the file had a lock in the UploadDB, *fileInSeqFile* indicates whether the file exists within
 the sequence file, *fileSha1* is the hash of the data. *fileSha1* should match *uploadEntry / sha1*. 
 
+Requires *read* permissions.
+
 ### Check File (Huge File)
 
 ```GET /fs/check/{path}```
@@ -222,6 +224,8 @@ Returns: application/json
 
 This performs an integrity check. See *Check File* for more. When checking huge files (not within a sequence file) the *fileInSeqFile* 
 will be missing but otherwise the response is the same as in *Check File*. 
+
+Requires *read* permissions. 
 
 ### Download Binary File (Huge File)
 
@@ -317,7 +321,7 @@ If this does not respond with a status code of ```200 OK``` then the service is 
 **Note:** As of now uploading huge files using this method will not work as
 they will be loaded into memory first. We're hoping to fix this. 
 
-```POST /fs/seq/up/{fileName}```
+```POST /seq/up/{fileName}```
 ```q
 Path Parameters:
   - fileName: Name of the file (including extension).
