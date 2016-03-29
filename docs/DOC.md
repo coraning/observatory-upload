@@ -192,11 +192,11 @@ results of the check:
   "filePresent" : true,
   "path" : "hdfs://...../test/testing/txt/0003.seq", 
   "uploadEntry" : { "_id" : { "$oid" : "56f10253f2498617749d9b7d" },
-                              "complete" : true, 
-                              "meta" : { 
-                                "msmntCampaign" : "testing", 
-                                "format" : "txt", 
-                                "seq" : "0003" }, 
+                    "complete" : true, 
+                    "meta" : { 
+                      "msmntCampaign" : "testing", 
+                      "format" : "txt", 
+                      "seq" : "0003" }, 
                     "path" : "hdfs://srv-lab-t-425:9000/test/testing/txt/0003.seq", 
                     "seqKey" : "small9.txt",
                     "sha1" : "b56de6dcf8dcd56d6a0603d8d1b6ece0673384b3", 
