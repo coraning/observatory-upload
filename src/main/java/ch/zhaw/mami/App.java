@@ -15,6 +15,17 @@ public class App {
 
     public static void main(final String[] args) throws Exception {
 
+        ProcessBuilder pb = new ProcessBuilder();
+        pb.command("/home/mroman/tmp/test.py", "bar", "foo", "{}");
+        Process proc = pb.start();
+        int i = proc.waitFor();
+        System.out.println(i);
+        if (i != 9999) {
+            System.exit(1);
+        }
+
+        System.setProperty("HADOOP_USER_NAME", "hdfs-mami");
+
         if (System.getProperty("log4j.configurationFile") == null) {
             System.out.println("Using default /etc/hdfs-mami/logger.xml!");
             System.setProperty("log4j.configurationFile",

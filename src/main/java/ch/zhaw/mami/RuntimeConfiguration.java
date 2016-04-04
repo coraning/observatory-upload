@@ -30,6 +30,7 @@ public class RuntimeConfiguration {
     private static String uploadDBName = "uploads";
     private static String logDBName = "log";
     private static String url = "http://localhost:9998/";
+    private static String validatorPath = "/etc/hdfs-mami/validator.py";
 
     private final static String cfgHDFS_PATH = "HDFS_PATH";
     private final static String cfgAUTH_DB_NAME = "AUTH_DB_NAME";
@@ -37,6 +38,7 @@ public class RuntimeConfiguration {
     private final static String cfgUPLOAD_DB_NAME = "UPLOAD_DB_NAME";
     private final static String cfgURL = "URL";
     private final static String propCfgPath = "MAMI_HDFS_CFG_PATH";
+    private final static String cfgVALIDATOR_PATH = "VALIDATOR_PATH";
     private final AuthDB authDB;
     private final UploadDB uploadDB;
     private final LogDB logDB;
@@ -86,6 +88,11 @@ public class RuntimeConfiguration {
         if (props.getProperty(RuntimeConfiguration.cfgURL) != null) {
             RuntimeConfiguration.url = props
                     .getProperty(RuntimeConfiguration.cfgURL);
+        }
+
+        if (props.getProperty(RuntimeConfiguration.cfgVALIDATOR_PATH) != null) {
+            RuntimeConfiguration.validatorPath = props
+                    .getProperty(RuntimeConfiguration.cfgVALIDATOR_PATH);
         }
 
         return RuntimeConfiguration.instance = new RuntimeConfiguration();
@@ -161,6 +168,10 @@ public class RuntimeConfiguration {
 
     public String getURL() {
         return RuntimeConfiguration.url;
+    }
+
+    public String getValidatorPath() {
+        return RuntimeConfiguration.validatorPath;
     }
 
 }

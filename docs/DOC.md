@@ -4,7 +4,19 @@ Date: 2016-03-16
 
 # MAMI HDFS REST WebService
 
+## Notes about uploading raw data
+
+When uploading raw data you have two options available. 
+If you intend to upload lots of small files (in the range of about 0 - 64MB) then the recommended option is to
+upload them into a sequence file. 
+
 ## Examples
+
+### Uploading files into a sequence file
+
+This example demonstrates how to upload two small files into a sequence file. Sequence files are a special hadoop/hdfs
+file format and are basically a key/value-store. The sequence file will be created if it does not exist. For more details
+please consult the documentation of the *Upload Raw Data* method. 
 
 ```
 $ cat small2.txt
@@ -24,6 +36,37 @@ $ curl -v -i -H "X-API-KEY: key" https://217.150.246.7:6443/hdfs/fs/seq/ls/testi
 
 $ curl -v -i -H "X-API-KEY: key" https://217.150.246.7:6443/hdfs/fs/seq/raw/testing/txt/0003.seq?fileName=small2.txt --insecure
 this is two
+```
+
+After uploading you can call the *Check File* method to make sure everything went smoothly although if the *Upload File* method did respond with a
+```200``` everything should be fine:
+
+```
+$ curl -H "X-API-KEY: key" https://217.150.246.7:6443/hdfs/fs/seq/check/testing/txt/0003.seq?fileName=small1.txt --insecure
+
+{
+   "uploadEntryPresent":true,
+   "filePresent":true,
+   "path":"hdfs://localhost:9000/uploads/testing/txt/0003.seq",
+   "uploadEntry":{
+      "_id":{
+         "$oid":"56eff45c31e34a619720bfdc"
+      },
+      "complete":true,
+      "meta":{
+         "msmntCampaign":"testing",
+         "format":"txt",
+         "seq":"0003"
+      },
+      "path":"hdfs://localhost:9000/uploads/testing/txt/0003.seq",
+      "seqKey":"small1.txt",
+      "sha1":"ee4f42fa585d9bb88f25e83f6f8cea6563749585",
+      "uploader":"munt_test"
+   },
+   "locked":false,
+   "fileInSeqFile":true,
+   "fileSha1":"ee4f42fa585d9bb88f25e83f6f8cea6563749585"
+}
 ```
 
 
@@ -62,6 +105,11 @@ Name of the database used to store upload information.
 ### URL
 
 The URL the REST service will be run at (this also defines the port it will listen on).
+
+### VALIDATOR_PATH
+
+Path to the upload validator. Must return with exit code `0` or otherwise the upload is considered
+to be invalid. 
 
 ## AuthDB
 
@@ -161,6 +209,12 @@ are to be kept private, must not be shared. If you think that your API-Key is no
 has a name associated. This name refers to the person responsible for the API-Key. 
 The name is mainly used for logging purposes as due to security reasons the API-Key
 should not be logged. 
+
+## Validation
+
+Upon uploading an external validator is run. The path to the executable to be run is configurable through the `VALIDATOR_PATH` configuration setting.
+The validator is expected to return exit code `0` on success and `<>0` on error. On error the service will read stdout from the validator's process
+and return it as an error message to the client (the uploader). 
 
 ## API
 
