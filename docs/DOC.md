@@ -146,13 +146,15 @@ The schema is:
  "meta":<metadata>,
  "uploader":<name of the uploader,
  "seqKey":<seqKey>,
- "timestamp":<time of upload (unix timestamp)>}
+ "timestamp":<time of upload (unix timestamp)>,
+ "validated":<boolean)}
 ```
 
 *metadata* refers to the metadata specified by the uploader of the file when calling the *Upload Raw Data* REST-method. It may be an arbitrary JSON document but it includes at least ```msmntCampaign``` and ```format``` (see *Upload Raw Data* REST-method).
 An API-Key has a name associated which is stored as *uploader* in each entry in the collection. *seqKey* is used when the file is placed in a SequenceFile. 
 *msmntCampaign* and *format* must satisfy the regex `[a-zA-Z0-9\-]*`. In *seqKey* a dot is allowed (but not two dots in a row).
-*msmntCampaign* and *format* are both each restricted to 32 characters.
+*msmntCampaign* and *format* are both each restricted to 32 characters. *complete* is set to true once uploading the data is complete 
+(the upload entry may exist before that) and *validated* is set to true if the data was uploaded and the validator deemed the uploaded file to be valid. 
 
 Uses the collection ```uploads``` in the *UPLOAD_DB_NAME* database.
 
@@ -214,7 +216,13 @@ should not be logged.
 
 Upon uploading an external validator is run. The path to the executable to be run is configurable through the `VALIDATOR_PATH` configuration setting.
 The validator is expected to return exit code `0` on success and `<>0` on error. On error the service will read stdout from the validator's process
-and return it as an error message to the client (the uploader). 
+and return it as an error message to the client (the uploader). The invoked validator will receive the arguments in the following order:
+
+```./<validator> <path> <seqKey> <metadata>```
+
+where *metadata* is the uploaded metadata (JSON), *seqKey* is the key of the entry in the sequence file and *path* is the path to the sequence file.
+If only two arguments are given (*seqKey* missing) the file was uploaded as a regular file thus the validator needs to distinguish between
+regular file uploads and file uploads into sequence files. 
 
 ## API
 

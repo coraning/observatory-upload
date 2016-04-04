@@ -2,8 +2,6 @@ package ch.zhaw.mami;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -36,12 +34,9 @@ import org.apache.hadoop.io.SequenceFile.CompressionType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bson.Document;
-import org.everit.json.schema.Schema;
-import org.everit.json.schema.loader.SchemaLoader;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.json.JSONTokener;
 
 import ch.zhaw.mami.db.AccessLevels;
 import ch.zhaw.mami.db.AuthDB;
@@ -998,6 +993,8 @@ public class API {
 
             Validator.validateSeqUpload(pt, fileName, meta);
 
+            uploadDB.markSeqUploadValidated(pt.toString(), fileName);
+
             return API.logger.exit(Response.ok(digest).build());
         } catch (ValidationException ex) {
             return API.logger.exit(clientError("Validation failed: "
@@ -1133,6 +1130,8 @@ public class API {
 
             Validator.validateUpload(pt, meta);
 
+            uploadDB.markUploadValidated(pt.toString());
+
             return API.logger.exit(Response.ok(digest).build());
 
         } catch (ValidationException ex) {
@@ -1181,21 +1180,6 @@ public class API {
                 return API.logger.exit(internalError());
             }
         }
-    }
-
-    @Path("validateMeta")
-    @POST
-    @Consumes({ MediaType.APPLICATION_JSON })
-    public Response validateMeta(final String json) throws JSONException,
-            FileNotFoundException {
-        System.out.println(json);
-
-        JSONObject rawSchema = new JSONObject(new JSONTokener(
-                new FileInputStream("/home/mroman/tmp/schema.json")));
-        Schema schema = SchemaLoader.load(rawSchema);
-        schema.validate(new JSONObject(json));
-
-        return Response.ok("OK", MediaType.TEXT_PLAIN).build();
     }
 
 }

@@ -164,6 +164,7 @@ public class UploadDB {
             doc.append("meta", metaDoc);
             doc.append("sha1", "");
             doc.append("complete", false);
+            doc.append("validated", false);
             doc.append("seqKey", seqKey);
             doc.append("uploader", name);
             doc.append("timestamp", new Date().getTime() / 1000);
@@ -188,11 +189,45 @@ public class UploadDB {
             doc.append("sha1", "");
             doc.append("complete", false);
             doc.append("uploader", name);
+            doc.append("validated", false);
             doc.append("timestamp", new Date().getTime() / 1000);
 
             collection.insertOne(doc);
 
             return true;
+        }
+    }
+
+    public void markSeqUploadValidated(final String path, final String seqKey) {
+        synchronized (UploadDB.mutex) {
+            Document queryDoc = new Document();
+            Document updateDoc = new Document();
+            Document modDoc = new Document();
+
+            queryDoc.append("path", path);
+            queryDoc.append("seqKey", seqKey);
+
+            modDoc.append("validated", true);
+
+            updateDoc.append("$set", modDoc);
+
+            collection.updateOne(queryDoc, updateDoc);
+        }
+    }
+
+    public void markUploadValidated(final String path) {
+        synchronized (UploadDB.mutex) {
+            Document queryDoc = new Document();
+            Document updateDoc = new Document();
+            Document modDoc = new Document();
+
+            queryDoc.append("path", path);
+
+            modDoc.append("validated", true);
+
+            updateDoc.append("$set", modDoc);
+
+            collection.updateOne(queryDoc, updateDoc);
         }
     }
 
