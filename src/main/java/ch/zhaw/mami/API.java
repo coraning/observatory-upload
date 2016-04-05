@@ -42,8 +42,6 @@ import ch.zhaw.mami.db.AccessLevels;
 import ch.zhaw.mami.db.AuthDB;
 import ch.zhaw.mami.db.LogDB;
 import ch.zhaw.mami.db.UploadDB;
-import ch.zhaw.mami.validation.ValidationException;
-import ch.zhaw.mami.validation.Validator;
 
 import com.sun.jersey.multipart.FormDataParam;
 
@@ -991,14 +989,7 @@ public class API {
 
             uploadDB.completeSeqUpload(pt.toString(), fileName, digest);
 
-            Validator.validateSeqUpload(pt, fileName, meta);
-
-            uploadDB.markSeqUploadValidated(pt.toString(), fileName);
-
             return API.logger.exit(Response.ok(digest).build());
-        } catch (ValidationException ex) {
-            return API.logger.exit(clientError("Validation failed: "
-                    + ex.getMessage()));
         } catch (JSONException ex) {
             API.logger.catching(ex);
             return API.logger.exit(clientError("Invalid JSON!"));
@@ -1128,15 +1119,8 @@ public class API {
 
             uploadDB.completeUpload(pt.toString(), digest);
 
-            Validator.validateUpload(pt, meta);
-
-            uploadDB.markUploadValidated(pt.toString());
-
             return API.logger.exit(Response.ok(digest).build());
 
-        } catch (ValidationException ex) {
-            return API.logger.exit(clientError("Validation failed: "
-                    + ex.getMessage()));
         } catch (JSONException ex) {
             API.logger.catching(ex);
             return API.logger.exit(clientError("Invalid JSON!"));

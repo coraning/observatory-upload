@@ -106,11 +106,6 @@ Name of the database used to store upload information.
 
 The URL the REST service will be run at (this also defines the port it will listen on).
 
-### VALIDATOR_PATH
-
-Path to the upload validator. Must return with exit code `0` or otherwise the upload is considered
-to be invalid. 
-
 ## AuthDB
 
 The AuthDB (auth database) contains the API-keys and their associated access level.
@@ -154,7 +149,7 @@ The schema is:
 An API-Key has a name associated which is stored as *uploader* in each entry in the collection. *seqKey* is used when the file is placed in a SequenceFile. 
 *msmntCampaign* and *format* must satisfy the regex `[a-zA-Z0-9\-]*`. In *seqKey* a dot is allowed (but not two dots in a row).
 *msmntCampaign* and *format* are both each restricted to 32 characters. *complete* is set to true once uploading the data is complete 
-(the upload entry may exist before that) and *validated* is set to true if the data was uploaded and the validator deemed the uploaded file to be valid. 
+(the upload entry may exist before that).
 
 Uses the collection ```uploads``` in the *UPLOAD_DB_NAME* database.
 
@@ -211,18 +206,6 @@ are to be kept private, must not be shared. If you think that your API-Key is no
 has a name associated. This name refers to the person responsible for the API-Key. 
 The name is mainly used for logging purposes as due to security reasons the API-Key
 should not be logged. 
-
-## Validation
-
-Upon uploading an external validator is run. The path to the executable to be run is configurable through the `VALIDATOR_PATH` configuration setting.
-The validator is expected to return exit code `0` on success and `<>0` on error. On error the service will read stdout from the validator's process
-and return it as an error message to the client (the uploader). The invoked validator will receive the arguments in the following order:
-
-```./<validator> <path> <seqKey> <metadata>```
-
-where *metadata* is the uploaded metadata (JSON), *seqKey* is the key of the entry in the sequence file and *path* is the path to the sequence file.
-If only two arguments are given (*seqKey* missing) the file was uploaded as a regular file thus the validator needs to distinguish between
-regular file uploads and file uploads into sequence files. 
 
 ## API
 
