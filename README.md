@@ -54,7 +54,7 @@ You may upload raw data with curl or any other program and/or library you choose
 The upload methods will return a SHA1 hash of the raw data received. You may check this hash against your local version of the raw data to
 ensure that the data was received correctly. 
 
-#### Uploading into a SequenceFile
+*Uploading into a SequenceFile*
 
 ```
 $ cat small2.txt
@@ -80,7 +80,7 @@ $ curl -v -i -H "X-API-KEY: key" https://217.150.246.7:6443/hdfs/fs/seq/raw/test
 this is two
 ```
 
-#### Uploading standalone file
+*Uploading standalone file*
 
 ```
 $ cat numbers.csv 
