@@ -86,6 +86,11 @@ AUTH_DB_NAME=auth
 UPLOAD_DB_NAME=uploads
 ```
 
+### MONGO_URI
+
+Connection string to pass use to connect to mongodb. 
+Format is: `mongodb://user:pwd@host/?authSource=<authSource>`.
+
 #### AUTH_DB_NAME
 
 Name of the database used to store authentication information. 

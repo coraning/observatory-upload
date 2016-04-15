@@ -14,6 +14,7 @@ import ch.zhaw.mami.db.LogDB;
 import ch.zhaw.mami.db.UploadDB;
 
 import com.mongodb.MongoClient;
+import com.mongodb.MongoClientURI;
 
 /**
  * Runtime configuration. Singleton class. Also serves as a factory. TODO: Maybe
@@ -30,6 +31,7 @@ public class RuntimeConfiguration {
     private static String uploadDBName = "uploads";
     private static String logDBName = "log";
     private static String url = "http://localhost:9998/";
+    private static String mongoURI = "";
 
     private final static String cfgHDFS_PATH = "HDFS_PATH";
     private final static String cfgAUTH_DB_NAME = "AUTH_DB_NAME";
@@ -37,6 +39,7 @@ public class RuntimeConfiguration {
     private final static String cfgUPLOAD_DB_NAME = "UPLOAD_DB_NAME";
     private final static String cfgURL = "URL";
     private final static String propCfgPath = "MAMI_HDFS_CFG_PATH";
+    private final static String cfgMONGO_URI = "MONGO_URI";
     private final AuthDB authDB;
     private final UploadDB uploadDB;
     private final LogDB logDB;
@@ -86,6 +89,11 @@ public class RuntimeConfiguration {
         if (props.getProperty(RuntimeConfiguration.cfgURL) != null) {
             RuntimeConfiguration.url = props
                     .getProperty(RuntimeConfiguration.cfgURL);
+        }
+
+        if (props.getProperty(RuntimeConfiguration.cfgMONGO_URI) != null) {
+            RuntimeConfiguration.mongoURI = props
+                    .getProperty(RuntimeConfiguration.cfgMONGO_URI);
         }
 
         return RuntimeConfiguration.instance = new RuntimeConfiguration();
@@ -141,7 +149,8 @@ public class RuntimeConfiguration {
 
     public MongoClient getMongoClient() {
         if (RuntimeConfiguration.mongoClient == null) {
-            RuntimeConfiguration.mongoClient = new MongoClient();
+            RuntimeConfiguration.mongoClient = new MongoClient(
+                    new MongoClientURI(RuntimeConfiguration.mongoURI));
         }
 
         return RuntimeConfiguration.mongoClient;
