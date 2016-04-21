@@ -14,6 +14,8 @@ If you chose to upload your small files into a SequenceFile you have to sketch o
 together. We use SequenceFiles as an archive format to store multiple files into a single file. You may for example
 choose to store all data from a certain week into the same SequenceFile. 
 
+If you want to do test uploads please use `"msmntCampaign":"testing"` in the metadata.
+
 ### Metadata
 
 If you upload a raw data file you have to provide metadata. This metadata has to be a JSON file.
