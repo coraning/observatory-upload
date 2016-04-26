@@ -11,17 +11,17 @@ public class Util {
     }
 
     public static boolean validateFileName(final String string) {
-        if (string.indexOf('.') != string.lastIndexOf('.')) {
-            return false;
-        }
+        /*
+         * if (string.indexOf('.') != string.lastIndexOf('.')) { return false; }
+         */
 
         if (!string.matches("[a-zA-Z0-9\\.\\-]*")) {
             return false;
         }
 
-        if (string.contains("..")) {
-            return false;
-        }
+        /*
+         * if (string.contains("..")) { return false; }
+         */
 
         if (string.length() > 64) {
             return false;

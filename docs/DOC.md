@@ -152,7 +152,7 @@ The schema is:
 
 *metadata* refers to the metadata specified by the uploader of the file when calling the *Upload Raw Data* REST-method. It may be an arbitrary JSON document but it includes at least ```msmntCampaign``` and ```format``` (see *Upload Raw Data* REST-method).
 An API-Key has a name associated which is stored as *uploader* in each entry in the collection. *seqKey* is used when the file is placed in a SequenceFile. 
-*msmntCampaign* and *format* must satisfy the regex `[a-zA-Z0-9\-]*`. In *seqKey* a dot is allowed (but not two dots in a row).
+*msmntCampaign* and *format* must satisfy the regex `[a-zA-Z0-9\-]*`.
 *msmntCampaign* and *format* are both each restricted to 32 characters. *complete* is set to true once uploading the data is complete 
 (the upload entry may exist before that).
 
@@ -213,6 +213,10 @@ The name is mainly used for logging purposes as due to security reasons the API-
 should not be logged. 
 
 ## API
+
+## Filenames
+
+Filenames must satisfy the regex `[a-zA-Z0-9\.\-]` and are restricted to 64 characters.
 
 ## Error Codes
 
@@ -388,7 +392,7 @@ Returns: text/plain
 ```format (String)``` and ```seq (String)```. 
 ```seq``` is an identifier (such as for example ```0000```) which identifies
 the SequenceFile to put the new data into. *msmntCampaign* and *format* must satisfy the regex `[a-zA-Z0-9\-]*`.
-In *seq* a dot is allowed (but not two dots in a row). *fileName* must not be longer than 64 characters. *msmntCampaign*
+*fileName* must not be longer than 64 characters. *msmntCampaign*
 and *format* are restricted to 32 characters.
 
 The SequenceFile used will be ```WHDFS_PATH + '/' + msmntCampaign + '/' + format + '/' + seq + '.seq'``` and
