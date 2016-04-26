@@ -1,12 +1,10 @@
 package ch.zhaw.mami;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.security.MessageDigest;
 import java.util.Date;
 
@@ -119,26 +117,24 @@ public class API {
                         .exit(generic404("Not a file: " + pt.getName()));
             }
 
-            final BufferedReader br = new BufferedReader(new InputStreamReader(
-                    runtimeConfiguration.getFileSystem().open(pt)));
+            final InputStream is = runtimeConfiguration.getFileSystem()
+                    .open(pt);
 
             StreamingOutput so = new StreamingOutput() {
 
                 @Override
                 public void write(final OutputStream os) throws IOException,
                         WebApplicationException {
-                    BufferedWriter bw = new BufferedWriter(
-                            new OutputStreamWriter(os));
 
-                    char[] chunk = new char[runtimeConfiguration.getChunkSize()];
+                    byte[] chunk = new byte[runtimeConfiguration.getChunkSize()];
                     int read;
                     API.logger.trace("Reading chunks...");
-                    while ((read = br.read(chunk)) > 0) {
+                    while ((read = is.read(chunk)) > 0) {
                         API.logger.trace("got chunk of size: " + read);
-                        bw.write(chunk);
+                        os.write(chunk);
                         API.logger.trace("wrote chunk");
                     }
-                    bw.flush();
+                    os.flush();
 
                 }
 
