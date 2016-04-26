@@ -13,7 +13,6 @@ import com.mongodb.client.MongoCollection;
 
 public class UploadDB {
 
-    private final RuntimeConfiguration runtimeConfiguration;
     private final static Object mutex = new Object();
     private final MongoCollection<Document> collection;
     private final MongoCollection<Document> lockCollection;
@@ -22,7 +21,7 @@ public class UploadDB {
     private final static Logger logger = LogManager.getLogger(UploadDB.class);
 
     public UploadDB(final RuntimeConfiguration runtimeConfiguration) {
-        this.runtimeConfiguration = runtimeConfiguration;
+
         collection = runtimeConfiguration.getMongoClient()
                 .getDatabase(runtimeConfiguration.getUploadDBName())
                 .getCollection("uploads");
@@ -82,7 +81,8 @@ public class UploadDB {
 
             /* Entry with path exists. */
             FindIterable<Document> results = lockCollection.find(queryDoc);
-            for (Document doc : results) {
+            for (@SuppressWarnings("unused")
+            Document doc : results) {
                 return false;
             }
 
@@ -249,7 +249,8 @@ public class UploadDB {
             queryDoc.append("seqKey", seqKey);
 
             FindIterable<Document> results = collection.find(queryDoc);
-            for (Document doc : results) {
+            for (@SuppressWarnings("unused")
+            Document doc : results) {
                 return true;
             }
 
@@ -264,7 +265,9 @@ public class UploadDB {
             queryDoc.append("path", path);
 
             FindIterable<Document> results = collection.find(queryDoc);
-            for (Document doc : results) {
+
+            for (@SuppressWarnings("unused")
+            Document doc : results) {
                 return true;
             }
 

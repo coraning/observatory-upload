@@ -8,12 +8,9 @@ import com.mongodb.client.MongoCollection;
 
 public class AuthDB {
 
-    private final RuntimeConfiguration runtimeConfiguration;
-    private final static Object mutex = new Object();
     private final MongoCollection<Document> collection;
 
     public AuthDB(final RuntimeConfiguration runtimeConfiguration) {
-        this.runtimeConfiguration = runtimeConfiguration;
         collection = runtimeConfiguration.getMongoClient()
                 .getDatabase(runtimeConfiguration.getAuthDBName())
                 .getCollection("api_keys");

@@ -15,7 +15,7 @@ public class App {
 
     public static void main(final String[] args) throws Exception {
 
-        // System.setProperty("HADOOP_USER_NAME", "hdfs-mami");
+        System.setProperty("HADOOP_USER_NAME", "hdfs-mami");
 
         if (System.getProperty("log4j.configurationFile") == null) {
             System.out.println("Using default /etc/hdfs-mami/logger.xml!");

@@ -10,12 +10,9 @@ import com.mongodb.client.MongoCollection;
 
 public class LogDB {
 
-    private final RuntimeConfiguration runtimeConfiguration;
-    private final static Object mutex = new Object();
     private final MongoCollection<Document> collection;
 
     public LogDB(final RuntimeConfiguration runtimeConfiguration) {
-        this.runtimeConfiguration = runtimeConfiguration;
         collection = runtimeConfiguration.getMongoClient()
                 .getDatabase(runtimeConfiguration.getLogDBName())
                 .getCollection("log");

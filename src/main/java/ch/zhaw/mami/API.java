@@ -307,12 +307,6 @@ public class API {
                 .type(MediaType.TEXT_PLAIN).build());
     }
 
-    private Response generic500(final String string, final Exception ex) {
-        API.logger.entry(string, ex);
-        ex.printStackTrace();
-        return API.logger.exit(generic500(string));
-    }
-
     @SuppressWarnings("deprecation")
     private Response internalError() {
         API.logger.entry();
@@ -953,8 +947,6 @@ public class API {
                             + obj.getString("format") + "/" + seq + ".seq");
 
             locked = uploadDB.getLock(pt.toString());
-
-            FileSystem fs = runtimeConfiguration.getFileSystem();
 
             MessageDigest md = MessageDigest.getInstance("SHA-1");
 
