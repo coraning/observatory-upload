@@ -291,7 +291,7 @@ public class API {
 
     private Response clientError(final String message) {
         API.logger.entry(message);
-        return API.logger.exit(Response.status(401).entity(message)
+        return API.logger.exit(Response.status(499).entity(message)
                 .type(MediaType.TEXT_PLAIN).build());
     }
 
