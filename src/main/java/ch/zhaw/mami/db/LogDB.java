@@ -29,7 +29,7 @@ public class LogDB {
         doc.append("path", path);
         doc.append("action", action);
         doc.append("name", name);
-        doc.append("timestamp", new Date().toGMTString());
+        doc.append("timestamp", new Date().getTime() / 1000);
         collection.insertOne(doc);
     }
 }
