@@ -146,12 +146,13 @@ The schema is:
  "meta":<metadata>,
  "uploader":<name of the uploader,
  "seqKey":<seqKey>,
+ "fileName":<fileName>,
  "timestamp":<time of upload (unix timestamp)>,
  "validated":<boolean)}
 ```
 
 *metadata* refers to the metadata specified by the uploader of the file when calling the *Upload Raw Data* REST-method. It may be an arbitrary JSON document but it includes at least ```msmntCampaign``` and ```format``` (see *Upload Raw Data* REST-method).
-An API-Key has a name associated which is stored as *uploader* in each entry in the collection. *seqKey* is used when the file is placed in a SequenceFile. 
+An API-Key has a name associated which is stored as *uploader* in each entry in the collection. *seqKey* is used when the file is placed in a SequenceFile (otherwise *fileName* is used). 
 *msmntCampaign* and *format* must satisfy the regex `[a-zA-Z0-9\-]*`.
 *msmntCampaign* and *format* are both each restricted to 32 characters. *complete* is set to true once uploading the data is complete 
 (the upload entry may exist before that).
