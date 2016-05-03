@@ -60,7 +60,7 @@ public class API {
     public API() throws IOException {
         API.logger.entry();
         runtimeConfiguration = RuntimeConfiguration.getInstance();
-        System.out.println(runtimeConfiguration.getPathPrefix());
+        // System.out.println(runtimeConfiguration.getPathPrefix());
         authDB = runtimeConfiguration.getAuthDB();
         uploadDB = runtimeConfiguration.getUploadDB();
         logDB = runtimeConfiguration.getLogDB();
@@ -962,18 +962,19 @@ public class API {
 
             seqWriter = SequenceFile.createWriter(
                     runtimeConfiguration.getFSConfiguration(),
-                    SequenceFile.Writer.compression(CompressionType.RECORD),
+                    SequenceFile.Writer.compression(CompressionType.NONE),
                     SequenceFile.Writer.keyClass(BytesWritable.class),
                     SequenceFile.Writer.valueClass(BytesWritable.class),
                     SequenceFile.Writer.appendIfExists(true),
                     SequenceFile.Writer.file(pt));
 
-            BytesWritable key = new BytesWritable(fileName.getBytes());
+            BytesWritable key = new BytesWritable(fileName.getBytes("UTF-8"));
             BytesWritable val = new BytesWritable(data);
 
             seqWriter.append(key, val);
             seqWriter.hflush();
             seqWriter.hsync();
+            seqWriter.close();
 
             uploadDB.completeSeqUpload(pt.toString(), fileName, digest);
 
@@ -1011,6 +1012,35 @@ public class API {
             if (error) {
                 API.logger.exit(internalError());
             }
+        }
+    }
+
+    @Path("fs/size")
+    @POST
+    @Consumes({ MediaType.APPLICATION_OCTET_STREAM })
+    public Response size(@HeaderParam("X-API-KEY") final String apiKey,
+            final InputStream data) {
+        API.logger.entry(data);
+
+        try {
+            uploadDB.getLock("foobar");
+
+            byte chunk[] = new byte[runtimeConfiguration.getChunkSize()];
+            long size = 0;
+            int read;
+            while ((read = data.read(chunk)) > 0) {
+                size += read;
+            }
+
+            runtimeConfiguration.getFileSystem();
+
+            uploadDB.releaseLock("foobar");
+
+            return API.logger.exit(Response.ok("Size: " + Long.toString(size),
+                    MediaType.TEXT_PLAIN).build());
+        } catch (Exception ex) {
+            API.logger.catching(ex);
+            return API.logger.exit(internalError());
         }
     }
 
@@ -1087,7 +1117,7 @@ public class API {
             }
 
             if (!uploadDB.insertUpload(pt.toString(), meta,
-                    authDB.getName(apiKey))) {
+                    authDB.getName(apiKey), fileName)) {
                 return API.logger
                         .exit(clientError("Upload entry already exists!"));
             }
@@ -1102,6 +1132,7 @@ public class API {
             }
 
             os.flush();
+            os.close();
 
             String digest = Util.byteArr2HexStr(md.digest());
 
@@ -1114,6 +1145,7 @@ public class API {
             return API.logger.exit(clientError("Invalid JSON!"));
         } catch (Exception ex) {
             API.logger.catching(ex);
+            uploadDB.insertError(pt.toString(), "", ex.getMessage());
             return API.logger.exit(internalError());
         } finally {
 
@@ -1153,5 +1185,4 @@ public class API {
             }
         }
     }
-
 }

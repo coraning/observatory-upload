@@ -3,6 +3,8 @@ package ch.zhaw.mami;
 import java.util.HashMap;
 import java.util.Map;
 
+import ch.zhaw.mami.imp.FolderImporter;
+
 import com.sun.grizzly.http.SelectorThread;
 import com.sun.jersey.api.container.grizzly.GrizzlyWebContainerFactory;
 
@@ -13,9 +15,38 @@ import com.sun.jersey.api.container.grizzly.GrizzlyWebContainerFactory;
 
 public class App {
 
+    public static void folderImport(final String[] args) throws Exception {
+        if (args.length != 3) {
+            throw new RuntimeException("Need more arguments: <path> <uploader>");
+        }
+        System.out.println("Importing from: " + args[1]);
+        FolderImporter fi = null;
+        try {
+            fi = new FolderImporter(args[1], args[2]);
+            fi.importFiles();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw ex;
+        } finally {
+            if (fi != null) {
+                fi.close();
+            }
+        }
+    }
+
     public static void main(final String[] args) throws Exception {
 
-        System.setProperty("HADOOP_USER_NAME", "hdfs-mami");
+        // System.setProperty("HADOOP_USER_NAME", "hdfs-mami");
+
+        if (args.length > 0) {
+            if (args[0].equals("folderImport")) {
+                App.folderImport(args);
+                return;
+            }
+            else {
+                throw new RuntimeException("Invalid cmdline arguments.");
+            }
+        }
 
         if (System.getProperty("log4j.configurationFile") == null) {
             System.out.println("Using default /etc/hdfs-mami/logger.xml!");

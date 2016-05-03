@@ -83,6 +83,7 @@ public class UploadDB {
             FindIterable<Document> results = lockCollection.find(queryDoc);
             for (@SuppressWarnings("unused")
             Document doc : results) {
+                System.out.println(doc.toJson());
                 return false;
             }
 
@@ -176,7 +177,7 @@ public class UploadDB {
     }
 
     public boolean insertUpload(final String path, final String jsonData,
-            final String name) {
+            final String name, final String fileName) {
         synchronized (UploadDB.mutex) {
             if (uploadExists(path)) {
                 return false;
@@ -191,6 +192,7 @@ public class UploadDB {
             doc.append("uploader", name);
             doc.append("validated", false);
             doc.append("timestamp", new Date().getTime() / 1000);
+            doc.append("fileName", fileName);
 
             collection.insertOne(doc);
 
