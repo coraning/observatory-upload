@@ -23,6 +23,9 @@ public class App {
         FolderImporter fi = null;
         try {
             fi = new FolderImporter(args[1], args[2]);
+            if (args[2].equals("nodb")) {
+                fi.setUseDb(false);
+            }
             fi.importFiles();
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -40,11 +43,17 @@ public class App {
 
         if (args.length > 0) {
             if (args[0].equals("folderImport")) {
-                App.folderImport(args);
-                return;
+                try {
+                    App.folderImport(args);
+                    System.exit(0);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    System.exit(1);
+                }
             }
             else {
-                throw new RuntimeException("Invalid cmdline arguments.");
+                System.out.println("Invalid cmdline arguments.");
+                System.exit(1);
             }
         }
 

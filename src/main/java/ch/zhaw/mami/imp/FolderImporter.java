@@ -33,6 +33,7 @@ public class FolderImporter {
     private final boolean locked;
     private final Path pt;
     private final SequenceFile.Writer seqWriter;
+    private boolean useDb = true;
 
     public FolderImporter(final String lPath, final String uploader)
             throws IOException {
@@ -97,7 +98,7 @@ public class FolderImporter {
 
         seqWriter = SequenceFile.createWriter(
                 runtimeConfiguration.getFSConfiguration(),
-                SequenceFile.Writer.compression(CompressionType.NONE),
+                SequenceFile.Writer.compression(CompressionType.RECORD),
                 SequenceFile.Writer.keyClass(BytesWritable.class),
                 SequenceFile.Writer.valueClass(BytesWritable.class),
                 SequenceFile.Writer.appendIfExists(true),
@@ -129,7 +130,7 @@ public class FolderImporter {
             File f = new File(path);
             if (f.isFile()) {
                 if (!Util.validateFileName(l)) {
-                    throw new RuntimeException("Illegale filename: " + path);
+                    throw new RuntimeException("Illegal filename: " + path);
                 }
                 files.add(l);
             }
@@ -137,11 +138,13 @@ public class FolderImporter {
 
         for (String l : files) {
 
-            System.out.println("Importing " + l + "...");
+            System.out.println("Importing (db:" + useDb + ") " + l + "...");
 
-            if (uploadDB.seqUploadExists(pt.toString(), l)) {
-                throw new RuntimeException("Error: " + l
-                        + " already has an upload entry!");
+            if (useDb) {
+                if (uploadDB.seqUploadExists(pt.toString(), l)) {
+                    throw new RuntimeException("Error: " + l
+                            + " already has an upload entry!");
+                }
             }
 
             File metaFile = new File(dir.getAbsolutePath() + File.separatorChar
@@ -162,8 +165,10 @@ public class FolderImporter {
 
             }
 
-            uploadDB.insertSeqUpload(pt.toString(), metaData.toString(), l,
-                    uploader);
+            if (useDb) {
+                uploadDB.insertSeqUpload(pt.toString(), metaData.toString(), l,
+                        uploader);
+            }
 
             byte[] data = Files.readAllBytes(Paths.get(dir.getAbsolutePath()
                     + File.separatorChar + l));
@@ -179,7 +184,9 @@ public class FolderImporter {
             seqWriter.append(key, val);
             // seqWriter.hflush();
             // seqWriter.hsync();
-            uploadDB.completeSeqUpload(pt.toString(), l, sha1);
+            if (useDb) {
+                uploadDB.completeSeqUpload(pt.toString(), l, sha1);
+            }
 
         }
 
@@ -187,5 +194,9 @@ public class FolderImporter {
         seqWriter.hsync();
 
         System.out.println("Done.");
+    }
+
+    public void setUseDb(final boolean useDb) {
+        this.useDb = useDb;
     }
 }

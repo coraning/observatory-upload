@@ -256,7 +256,9 @@ public class API {
             boolean error = false;
 
             try {
-                is.close();
+                if (is != null) {
+                    is.close();
+                }
             } catch (Exception ex) {
                 API.logger.catching(ex);
                 error = true;
@@ -962,7 +964,7 @@ public class API {
 
             seqWriter = SequenceFile.createWriter(
                     runtimeConfiguration.getFSConfiguration(),
-                    SequenceFile.Writer.compression(CompressionType.NONE),
+                    SequenceFile.Writer.compression(CompressionType.RECORD),
                     SequenceFile.Writer.keyClass(BytesWritable.class),
                     SequenceFile.Writer.valueClass(BytesWritable.class),
                     SequenceFile.Writer.appendIfExists(true),
