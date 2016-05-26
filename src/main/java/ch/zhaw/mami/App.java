@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import ch.zhaw.mami.imp.FolderImporter;
+import ch.zhaw.mami.mr.FolderReader;
 
 import com.sun.grizzly.http.SelectorThread;
 import com.sun.jersey.api.container.grizzly.GrizzlyWebContainerFactory;
@@ -50,6 +51,10 @@ public class App {
                     ex.printStackTrace();
                     System.exit(1);
                 }
+            }
+            if (args[0].equals("folderReader")) {
+                FolderReader.folderReader(args);
+                System.exit(0);
             }
             else {
                 System.out.println("Invalid cmdline arguments.");
