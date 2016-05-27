@@ -10,10 +10,10 @@ import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.io.BytesWritable;
-import org.apache.hadoop.io.SequenceFile;
 
 import ch.zhaw.mami.RuntimeConfiguration;
 import ch.zhaw.mami.mr.mappers.SizeF;
+import ch.zhaw.mami.mr.readers.SeqReader;
 import ch.zhaw.mami.mr.reducers.SumF;
 
 public class FolderReader extends Thread {
@@ -25,18 +25,45 @@ public class FolderReader extends Thread {
         int limit = 4;
         int numMappers = 2;
         int numReducers = 1;
+        int numReaders = 1;
+        String path = null;
+
+        if (args.length < 6) {
+            System.out
+                    .println("Need more arguments: <numReaders> <limit> <numMappers> <numReducers> <path>");
+            return;
+        }
+        else {
+            numReaders = Integer.parseInt(args[1]);
+            limit = Integer.parseInt(args[2]);
+            numMappers = Integer.parseInt(args[3]);
+            numReducers = Integer.parseInt(args[4]);
+            path = args[5];
+        }
+
+        System.out.println("Readers: " + numReaders);
+        System.out.println("Limit: " + limit);
+        System.out.println("Mappers: " + numMappers);
+        System.out.println("Reducers: " + numReducers);
+        System.out.println("Path: " + path);
 
         LinkedBlockingQueue<BytesWritable> queue = new LinkedBlockingQueue<BytesWritable>(
                 limit);
+        LinkedBlockingQueue<Path> pqueue = new LinkedBlockingQueue<Path>(
+                numMappers);
 
         List<Mapper<BytesWritable, Long>> mappers = new ArrayList<Mapper<BytesWritable, Long>>();
         List<Reducer<Long>> reducers = new ArrayList<Reducer<Long>>();
+        List<SeqReader> readers = new ArrayList<SeqReader>();
 
-        System.out.println("Starting reader...");
+        System.out.println("Starting readers...");
 
-        FolderReader fr = new FolderReader(RuntimeConfiguration.getInstance(),
-                queue);
-        fr.start();
+        for (int i = 0; i < numReaders; i++) {
+            SeqReader sr = new SeqReader(RuntimeConfiguration.getInstance(),
+                    queue, pqueue, i);
+            sr.start();
+            readers.add(sr);
+        }
 
         System.out.println("Starting mappers...");
 
@@ -57,9 +84,26 @@ public class FolderReader extends Thread {
             reducers.add(reducer);
         }
 
-        System.out.println("Waiting for reader....");
+        System.out.println("Enumerating files...");
 
-        fr.join();
+        RuntimeConfiguration runtimeConfiguration = RuntimeConfiguration
+                .getInstance();
+
+        Path pt = new Path(runtimeConfiguration.getPathPrefix() + path);
+        FileSystem fs = runtimeConfiguration.getFileSystem();
+
+        RemoteIterator<LocatedFileStatus> files = fs.listFiles(pt, false);
+
+        while (files.hasNext()) {
+            pqueue.put(files.next().getPath());
+        }
+
+        System.out.println("Waiting for readers....");
+
+        for (SeqReader reader : readers) {
+            reader.setStop();
+            reader.join();
+        }
 
         System.out.println("Waiting for mappers...");
 
@@ -78,66 +122,5 @@ public class FolderReader extends Thread {
 
         System.out.println("Done!");
 
-    }
-
-    private final RuntimeConfiguration runtimeConfiguration;
-    private final LinkedBlockingQueue<BytesWritable> queue;
-
-    public FolderReader(final RuntimeConfiguration runtimeConfiguration,
-            final LinkedBlockingQueue<BytesWritable> queue) {
-        this.runtimeConfiguration = runtimeConfiguration;
-        this.queue = queue;
-    }
-
-    @Override
-    public void run() {
-
-        try {
-            String path = "tracebox-8000-00/warts/";
-
-            org.apache.hadoop.fs.Path pt = new org.apache.hadoop.fs.Path(
-                    runtimeConfiguration.getPathPrefix() + path);
-
-            FileSystem fs = runtimeConfiguration.getFileSystem();
-
-            if (!fs.exists(pt)) {
-                throw new IOException("File does not exist on HDFS!");
-            }
-
-            if (!fs.isDirectory(pt)) {
-                throw new IOException("File is not a directory on HDFS!");
-            }
-
-            RemoteIterator<LocatedFileStatus> files = fs.listFiles(pt, false);
-
-            while (files.hasNext()) {
-                Path seqFile = files.next().getPath();
-                System.out.println(seqFile.toString());
-
-                SequenceFile.Reader seqReader = new SequenceFile.Reader(
-                        runtimeConfiguration.getFSConfiguration(),
-                        SequenceFile.Reader.file(seqFile));
-
-                BytesWritable key = new BytesWritable();
-                BytesWritable value = new BytesWritable();
-                while (seqReader.next(key, value)) {
-                    // String keyAsStr = new String(key.getBytes(), 0,
-                    // key.getLength());
-                    // System.out.println(" " + keyAsStr + "(" +
-                    // value.getLength()
-                    // + ")");
-                    queue.put(value);
-
-                    key = new BytesWritable();
-                    value = new BytesWritable();
-                }
-
-                seqReader.close();
-            }
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            return;
-        }
     }
 }
