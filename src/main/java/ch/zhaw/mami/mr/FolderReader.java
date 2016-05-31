@@ -12,14 +12,13 @@ import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.io.BytesWritable;
 
 import ch.zhaw.mami.RuntimeConfiguration;
-import ch.zhaw.mami.mr.mappers.SizeF;
 import ch.zhaw.mami.mr.readers.SeqReader;
-import ch.zhaw.mami.mr.reducers.SumF;
 
 public class FolderReader extends Thread {
 
     public static void folderReader(final String[] args) throws IOException,
-            InterruptedException {
+            InterruptedException, ClassNotFoundException,
+            InstantiationException, IllegalAccessException {
         System.setProperty("HADOOP_USER_NAME", "hdfs-mami");
 
         int limit = 4;
@@ -27,10 +26,12 @@ public class FolderReader extends Thread {
         int numReducers = 1;
         int numReaders = 1;
         String path = null;
+        Class<?> mapFunctionClass = null;
+        Class<?> reduceFunctionClass = null;
 
-        if (args.length < 6) {
+        if (args.length < 8) {
             System.out
-                    .println("Need more arguments: <numReaders> <limit> <numMappers> <numReducers> <path>");
+                    .println("Need more arguments: <numReaders> <limit> <numMappers> <numReducers> <path> <mapFunction> <reduceFunction> ");
             return;
         }
         else {
@@ -39,6 +40,8 @@ public class FolderReader extends Thread {
             numMappers = Integer.parseInt(args[3]);
             numReducers = Integer.parseInt(args[4]);
             path = args[5];
+            mapFunctionClass = Class.forName(args[6]);
+            reduceFunctionClass = Class.forName(args[7]);
         }
 
         System.out.println("Readers: " + numReaders);
@@ -46,14 +49,18 @@ public class FolderReader extends Thread {
         System.out.println("Mappers: " + numMappers);
         System.out.println("Reducers: " + numReducers);
         System.out.println("Path: " + path);
+        System.out.println("MapFunction: "
+                + mapFunctionClass.getCanonicalName());
+        System.out.println("ReduceFunction: "
+                + reduceFunctionClass.getCanonicalName());
 
         LinkedBlockingQueue<BytesWritable> queue = new LinkedBlockingQueue<BytesWritable>(
                 limit);
         LinkedBlockingQueue<Path> pqueue = new LinkedBlockingQueue<Path>(
                 numMappers);
 
-        List<Mapper<BytesWritable, Long>> mappers = new ArrayList<Mapper<BytesWritable, Long>>();
-        List<Reducer<Long>> reducers = new ArrayList<Reducer<Long>>();
+        List<Mapper> mappers = new ArrayList<Mapper>();
+        List<Reducer> reducers = new ArrayList<Reducer>();
         List<SeqReader> readers = new ArrayList<SeqReader>();
 
         System.out.println("Starting readers...");
@@ -70,8 +77,9 @@ public class FolderReader extends Thread {
         LinkedBlockingQueue<Long> rqueue = new LinkedBlockingQueue<Long>();
 
         for (int i = 0; i < numMappers; i++) {
+            MapFunction f = (MapFunction) mapFunctionClass.newInstance();
             Mapper<BytesWritable, Long> mapper = new Mapper<BytesWritable, Long>(
-                    queue, rqueue, new SizeF());
+                    queue, rqueue, f);
             mapper.start();
             mappers.add(mapper);
         }
@@ -79,7 +87,9 @@ public class FolderReader extends Thread {
         System.out.println("Starting reducers...");
 
         for (int i = 0; i < numReducers; i++) {
-            Reducer<Long> reducer = new Reducer<Long>(rqueue, new SumF());
+            ReduceFunction f = (ReduceFunction) reduceFunctionClass
+                    .newInstance();
+            Reducer<Long> reducer = new Reducer<Long>(rqueue, f);
             reducer.start();
             reducers.add(reducer);
         }
@@ -123,4 +133,5 @@ public class FolderReader extends Thread {
         System.out.println("Done!");
 
     }
+
 }

@@ -8,6 +8,7 @@ public class SizeF implements MapFunction<BytesWritable, Long> {
 
     @Override
     public Long f(final BytesWritable value) {
+
         return (long) value.getLength();
     }
 }

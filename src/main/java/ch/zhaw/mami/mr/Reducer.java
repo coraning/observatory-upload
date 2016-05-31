@@ -7,11 +7,11 @@ public class Reducer<A> extends Thread {
 
     private A result = null;
 
-    private final LinkedBlockingQueue<A> queue;
+    private LinkedBlockingQueue<A> queue;
 
     private boolean shouldStop = false;
 
-    private final ReduceFunction<A> f;
+    private ReduceFunction<A> f;
 
     public Reducer(final LinkedBlockingQueue<A> queue, final ReduceFunction<A> f) {
         this.queue = queue;
@@ -24,11 +24,16 @@ public class Reducer<A> extends Thread {
 
     @Override
     public void run() {
+
+        long min = Long.MAX_VALUE, max = 0, avg = 0;
+
         try {
             while (true) {
                 if (shouldStop && queue.isEmpty()) {
                     break;
                 }
+
+                long millis = System.currentTimeMillis();
 
                 A a = result;
                 A b = queue.poll(2, TimeUnit.SECONDS);
@@ -43,11 +48,28 @@ public class Reducer<A> extends Thread {
                 else {
                     result = f.f(a, b);
                 }
+
+                long diff = System.currentTimeMillis() - millis;
+
+                min = Math.min(min, diff);
+                max = Math.max(max, diff);
+                avg = (avg + diff) / 2;
             }
+
+            System.out.println("Reducer min/max/avg: " + min + "/" + max + "/"
+                    + avg);
         } catch (Exception ex) {
             ex.printStackTrace();
             System.exit(-23);
         }
+    }
+
+    public void setInputQueue(final LinkedBlockingQueue<A> queue) {
+        this.queue = queue;
+    }
+
+    public void setReduceFunction(final ReduceFunction<A> f) {
+        this.f = f;
     }
 
     public void setStop() {
